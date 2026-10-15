@@ -17,7 +17,7 @@ export default function SearchBar({ label, value, onChange, placeholder }: Searc
           <MagnifyingGlassIcon
             size={18}
             aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-secundario"
           />
           <input
             {...control}
@@ -29,7 +29,7 @@ export default function SearchBar({ label, value, onChange, placeholder }: Searc
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
             className={cn(
-              'block min-h-11 w-full rounded-md border border-slate-300 bg-white pl-10 pr-3 text-base text-slate-900 hover:border-slate-400',
+              'block min-h-11 w-full rounded-md border border-campo bg-superficie pl-10 pr-3 text-base text-tinta hover:border-campo',
               FOCUS_RING,
             )}
           />

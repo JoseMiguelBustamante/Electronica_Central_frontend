@@ -16,7 +16,7 @@ import LoadingState, { Skeleton } from '../components/LoadingState'
 import StatCard from '../components/StatCard'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { formatDateTime, formatNumber } from '../utils/formatters'
-import type { IndicadorId } from '../utils/mockData'
+import type { IndicadorId } from '../types/indicadores'
 import { NAV_ITEMS, ROUTES } from '../utils/navigation'
 
 const INDICATOR_ICONS: Record<IndicadorId, Icon> = {
@@ -29,10 +29,10 @@ const INDICATOR_ICONS: Record<IndicadorId, Icon> = {
 
 const QUICK_ACCESS = NAV_ITEMS.filter((item) => item.to !== ROUTES.dashboard)
 
-const SECTION_TITLE = 'text-base font-semibold text-slate-900'
-const LIST_BOX = 'divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white'
+const SECTION_TITLE = 'text-base font-semibold text-tinta'
+const LIST_BOX = 'divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie'
 const INSET_FOCUS =
-  'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700'
+  'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mascara'
 
 function DashboardSkeleton() {
   return (
@@ -58,8 +58,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <header>
-        <h2 className="text-xl font-semibold text-slate-900">Panel</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-xl font-semibold text-tinta">Panel</h2>
+        <p className="mt-1 text-sm text-secundario">
           Resumen general del sistema y accesos rápidos a sus principales módulos.
         </p>
       </header>
@@ -105,19 +105,19 @@ export default function Dashboard() {
                   <li key={to}>
                     <Link
                       to={to}
-                      className={`flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-slate-50 ${INSET_FOCUS}`}
+                      className={`flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-fondo ${INSET_FOCUS}`}
                     >
                       <span
                         aria-hidden="true"
-                        className="grid size-9 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-800"
+                        className="grid size-9 shrink-0 place-items-center rounded-md bg-suave text-mascara"
                       >
                         <ItemIcon size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-slate-900">{label}</span>
-                        <span className="block text-sm text-slate-600">{description}</span>
+                        <span className="block text-sm font-semibold text-tinta">{label}</span>
+                        <span className="block text-sm text-secundario">{description}</span>
                       </span>
-                      <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-slate-500" />
+                      <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
                     </Link>
                   </li>
                 ))}
@@ -134,7 +134,7 @@ export default function Dashboard() {
                 </h3>
                 <Link
                   to={ROUTES.bitacora}
-                  className="rounded-md px-1 text-sm font-medium text-blue-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                  className="rounded-md px-1 text-sm font-medium text-mascara hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mascara"
                 >
                   Ver bitácora
                 </Link>
@@ -147,9 +147,9 @@ export default function Dashboard() {
                       className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">{registro.accion}</p>
-                        <p className="break-words text-sm text-slate-700">{registro.objeto}</p>
-                        <p className="mt-0.5 text-xs text-slate-600">
+                        <p className="text-sm font-semibold text-tinta">{registro.accion}</p>
+                        <p className="break-words text-sm text-tinta">{registro.objeto}</p>
+                        <p className="mt-0.5 text-xs text-secundario">
                           {registro.usuario} <span aria-hidden="true">·</span>{' '}
                           <time dateTime={registro.fechaHora}>{formatDateTime(registro.fechaHora)}</time>
                         </p>

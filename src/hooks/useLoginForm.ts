@@ -1,30 +1,30 @@
 import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { mensajeError } from '../lib/errors'
 import { iniciarSesion } from '../services/authService'
 import { ROUTES } from '../utils/navigation'
 
 export const REQUIRED_FIELDS_MESSAGE = 'Complete los campos requeridos'
-const LOGIN_FAILED_MESSAGE = 'No se pudo iniciar sesión. Intente nuevamente.'
 
 interface FieldErrors {
-  correo?: string
+  identificador?: string
   contrasena?: string
 }
 
-/** Estado y validacion simulada del formulario de inicio de sesion (CU-1). */
 export function useLoginForm() {
   const navigate = useNavigate()
-  const [correo, setCorreo] = useState('')
+  const [searchParams] = useSearchParams()
+  const [identificador, setIdentificador] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [recordar, setRecordar] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleCorreoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setCorreo(event.target.value)
-    setFieldErrors((prev) => ({ ...prev, correo: undefined }))
+  const handleIdentificadorChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setIdentificador(event.target.value)
+    setFieldErrors((prev) => ({ ...prev, identificador: undefined }))
     setFormError(null)
   }
 
@@ -43,14 +43,14 @@ export function useLoginForm() {
     if (loading) return
 
     const errors: FieldErrors = {}
-    if (!correo.trim()) errors.correo = 'Ingrese su correo electrónico.'
+    if (!identificador.trim()) errors.identificador = 'Ingrese su usuario o correo.'
     if (!contrasena) errors.contrasena = 'Ingrese su contraseña.'
 
-    if (errors.correo || errors.contrasena) {
+    if (errors.identificador || errors.contrasena) {
       setFieldErrors(errors)
       setFormError(REQUIRED_FIELDS_MESSAGE)
       const primerCampoInvalido = event.currentTarget.elements.namedItem(
-        errors.correo ? 'correo' : 'contrasena',
+        errors.identificador ? 'identificador' : 'contrasena',
       )
       if (primerCampoInvalido instanceof HTMLElement) primerCampoInvalido.focus()
       return
@@ -60,22 +60,27 @@ export function useLoginForm() {
     setFormError(null)
     setLoading(true)
     try {
-      await iniciarSesion({ correo: correo.trim(), contrasena, recordar })
-      navigate(ROUTES.dashboard, { replace: true })
-    } catch {
-      setFormError(LOGIN_FAILED_MESSAGE)
+      await iniciarSesion(identificador.trim(), contrasena, recordar)
+      const volver = searchParams.get('volver')
+      const destino =
+        volver && volver.startsWith('/catalogo/') && !volver.startsWith('//')
+          ? volver
+          : ROUTES.dashboard
+      navigate(destino, { replace: true })
+    } catch (error) {
+      setFormError(mensajeError(error, 'No se pudo iniciar sesión. Intente nuevamente.'))
       setLoading(false)
     }
   }
 
   return {
-    correo,
+    identificador,
     contrasena,
     recordar,
     fieldErrors,
     formError,
     loading,
-    handleCorreoChange,
+    handleIdentificadorChange,
     handleContrasenaChange,
     handleRecordarChange,
     handleSubmit,

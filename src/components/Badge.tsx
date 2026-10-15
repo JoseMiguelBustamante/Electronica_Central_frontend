@@ -19,25 +19,45 @@ interface BadgeProps {
 }
 
 // Cada estado combina color, icono y texto: nunca depende solo del color.
-const VARIANTS: Record<BadgeVariant, { classes: string; icon: Icon }> = {
-  success: { classes: 'bg-green-50 text-green-800 ring-green-700/25', icon: CheckCircleIcon },
-  error: { classes: 'bg-red-50 text-red-800 ring-red-700/25', icon: XCircleIcon },
-  warning: { classes: 'bg-amber-50 text-amber-900 ring-amber-700/30', icon: WarningIcon },
-  info: { classes: 'bg-blue-50 text-blue-800 ring-blue-700/25', icon: InfoIcon },
-  neutral: { classes: 'bg-slate-100 text-slate-700 ring-slate-500/25', icon: MinusCircleIcon },
+const VARIANTS: Record<BadgeVariant, { classes: string; iconClass: string; icon: Icon }> = {
+  success: {
+    classes: 'border border-disponible-borde bg-disponible-fondo text-tinta',
+    iconClass: 'text-disponible',
+    icon: CheckCircleIcon,
+  },
+  error: {
+    classes: 'border border-agotado-borde bg-agotado-fondo text-tinta',
+    iconClass: 'text-peligro',
+    icon: XCircleIcon,
+  },
+  warning: {
+    classes: 'border border-poco-borde bg-poco-fondo text-tinta',
+    iconClass: 'text-poco',
+    icon: WarningIcon,
+  },
+  info: {
+    classes: 'border border-mascara/40 bg-suave text-tinta',
+    iconClass: 'text-mascara',
+    icon: InfoIcon,
+  },
+  neutral: {
+    classes: 'border border-campo bg-fondo text-tinta',
+    iconClass: 'text-secundario',
+    icon: MinusCircleIcon,
+  },
 }
 
 export default function Badge({ variant = 'neutral', icon, children }: BadgeProps) {
-  const { classes, icon: defaultIcon } = VARIANTS[variant]
+  const { classes, iconClass, icon: defaultIcon } = VARIANTS[variant]
   const BadgeIcon = icon === false ? null : (icon ?? defaultIcon)
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+        'inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[13px] font-medium',
         classes,
       )}
     >
-      {BadgeIcon && <BadgeIcon size={14} weight="fill" aria-hidden="true" />}
+      {BadgeIcon && <BadgeIcon size={14} weight="fill" aria-hidden="true" className={iconClass} />}
       {children}
     </span>
   )

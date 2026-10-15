@@ -1,17 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  actualizarUsuario,
-  asignarRolUsuario,
-  cambiarEstadoUsuario,
-  crearUsuario,
-  listarUsuarios,
-  revocarRolUsuario,
-} from '../services/usuarioService'
-import type { DatosUsuario } from '../services/usuarioService'
-import type { EstadoUsuario, Usuario } from '../utils/mockData'
+import { crearUsuario, listarUsuarios, restablecerUsuario } from '../services/usuarioService'
+import type { DatosUsuario, Usuario } from '../types/domain'
 import type { EstadoCarga } from './estadoCarga'
 
-/** Usuarios con sus operaciones. Hoy usa servicios simulados en memoria. */
 export function useUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
@@ -39,29 +30,14 @@ export function useUsuarios() {
     setIntento((n) => n + 1)
   }, [])
 
-  const reemplazar = (usuario: Usuario) =>
-    setUsuarios((prev) => prev.map((u) => (u.id === usuario.id ? usuario : u)))
-
   const crear = async (datos: DatosUsuario) => {
-    const nuevo = await crearUsuario(datos)
-    setUsuarios((prev) => [nuevo, ...prev])
+    await crearUsuario(datos)
+    recargar()
   }
 
-  const actualizar = async (id: number, datos: DatosUsuario) => {
-    reemplazar(await actualizarUsuario(id, datos))
+  const restablecer = async (id: string, contrasenaTemporal: string) => {
+    await restablecerUsuario(id, contrasenaTemporal)
   }
 
-  const cambiarEstado = async (id: number, nuevoEstado: EstadoUsuario) => {
-    reemplazar(await cambiarEstadoUsuario(id, nuevoEstado))
-  }
-
-  const asignarRol = async (usuarioId: number, rolId: number) => {
-    reemplazar(await asignarRolUsuario(usuarioId, rolId))
-  }
-
-  const revocarRol = async (usuarioId: number, rolId: number) => {
-    reemplazar(await revocarRolUsuario(usuarioId, rolId))
-  }
-
-  return { usuarios, estado, recargar, crear, actualizar, cambiarEstado, asignarRol, revocarRol }
+  return { usuarios, estado, recargar, crear, restablecer }
 }

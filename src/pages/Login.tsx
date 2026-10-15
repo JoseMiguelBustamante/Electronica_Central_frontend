@@ -11,31 +11,33 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-10 sm:px-6">
-      <div className="w-full max-w-md">
-        <header className="mb-6 flex flex-col items-center gap-3 text-center">
-          <p translate="no" className="text-xl font-bold text-slate-900">
+    <main className="flex min-h-dvh items-center bg-fondo px-6 py-16 sm:px-10 lg:px-20">
+      <div className="mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_28rem]">
+        <header>
+          <p translate="no" className="text-xl font-bold text-mascara">
             {BRAND_NAME}
+          </p>
+          <h1 id="login-title" className="mt-4 text-4xl font-bold text-tinta">
+            Ingresar
+          </h1>
+          <p className="mt-3 max-w-md text-base text-secundario">
+            Usuario o correo y contraseña. Ves el catálogo sin cuenta. La compra se cierra en tienda.
+          </p>
+          <p className="mt-4 text-[13px] font-medium text-secundario">
+            Atención en tienda: lun–sáb 08:00–12:00 · 13:30–17:00
           </p>
         </header>
 
         <section
           aria-labelledby="login-title"
-          className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8"
+          className="rounded-xl border border-linea bg-superficie p-7"
         >
-          <h1 id="login-title" className="text-xl font-semibold text-slate-900">
-            Iniciar sesión
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Ingrese sus credenciales para acceder al sistema. Los campos con asterisco (*) son
-            obligatorios.
-          </p>
 
-          <form onSubmit={form.handleSubmit} noValidate aria-busy={form.loading} className="mt-6 space-y-5">
+          <form onSubmit={form.handleSubmit} noValidate aria-busy={form.loading} className="space-y-5">
             {form.formError && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+                className="flex items-start gap-2 rounded-md border border-agotado-borde bg-agotado-fondo p-3 text-sm text-peligro"
               >
                 <WarningCircleIcon size={20} weight="fill" aria-hidden="true" className="shrink-0" />
                 <p>{form.formError}</p>
@@ -43,15 +45,15 @@ export default function Login() {
             )}
 
             <Input
-              label="Correo electrónico"
-              name="correo"
-              type="email"
+              label="Usuario o correo"
+              name="identificador"
+              type="text"
               autoComplete="username"
               spellCheck={false}
               required
-              value={form.correo}
-              onChange={form.handleCorreoChange}
-              error={form.fieldErrors.correo}
+              value={form.identificador}
+              onChange={form.handleIdentificadorChange}
+              error={form.fieldErrors.identificador}
               disabled={form.loading}
             />
 
@@ -72,7 +74,7 @@ export default function Login() {
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   disabled={form.loading}
                   className={cn(
-                    'grid size-10 place-items-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                    'grid size-10 place-items-center rounded-md text-secundario hover:bg-suave hover:text-tinta',
                     'disabled:cursor-not-allowed disabled:opacity-60',
                     FOCUS_RING,
                   )}
@@ -86,14 +88,14 @@ export default function Login() {
               }
             />
 
-            <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-tinta">
               <input
                 type="checkbox"
                 name="recordar"
                 checked={form.recordar}
                 onChange={form.handleRecordarChange}
                 disabled={form.loading}
-                className={cn('size-4 rounded border-slate-300 accent-blue-700', FOCUS_RING)}
+                className={cn('size-4 rounded border-campo accent-mascara', FOCUS_RING)}
               />
               Recordar sesión
             </label>

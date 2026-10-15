@@ -15,10 +15,10 @@ interface ToastItem {
   message: string
 }
 
-const VARIANTS: Record<ToastVariant, { classes: string; icon: Icon }> = {
-  success: { classes: 'border-green-300 text-green-900', icon: CheckCircleIcon },
-  error: { classes: 'border-red-300 text-red-900', icon: WarningCircleIcon },
-  info: { classes: 'border-blue-300 text-blue-900', icon: InfoIcon },
+const VARIANTS: Record<ToastVariant, { classes: string; iconClass: string; icon: Icon }> = {
+  success: { classes: 'border-disponible-borde bg-disponible-fondo text-tinta', iconClass: 'text-disponible', icon: CheckCircleIcon },
+  error: { classes: 'border-agotado-borde bg-agotado-fondo text-tinta', iconClass: 'text-peligro', icon: WarningCircleIcon },
+  info: { classes: 'border-mascara/40 bg-suave text-tinta', iconClass: 'text-mascara', icon: InfoIcon },
 }
 
 const DURATION_MS: Record<ToastVariant, number> = { success: 5000, info: 5000, error: 8000 }
@@ -72,17 +72,17 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
         className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col items-end gap-2 sm:left-auto sm:w-96"
       >
         {toasts.map((toast) => {
-          const { classes, icon: ToastIcon } = VARIANTS[toast.variant]
+          const { classes, iconClass, icon: ToastIcon } = VARIANTS[toast.variant]
           return (
             <div
               key={toast.id}
               role={toast.variant === 'error' ? 'alert' : undefined}
               className={cn(
-                'pointer-events-auto flex w-full items-start gap-3 rounded-lg border bg-white p-3 shadow-md',
+                'pointer-events-auto flex w-full items-start gap-3 rounded-lg border bg-superficie p-3 shadow-md',
                 classes,
               )}
             >
-              <ToastIcon size={20} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
+              <ToastIcon size={20} weight="fill" aria-hidden="true" className={cn('mt-0.5 shrink-0', iconClass)} />
               <p className="min-w-0 flex-1 text-sm font-medium">{toast.message}</p>
               <IconButton
                 label="Cerrar notificación"

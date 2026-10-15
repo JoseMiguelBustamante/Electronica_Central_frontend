@@ -13,22 +13,22 @@ interface AlertProps {
   action?: ReactNode
 }
 
-const VARIANTS: Record<AlertVariant, { classes: string; icon: Icon }> = {
-  error: { classes: 'border-red-300 bg-red-50 text-red-800', icon: WarningCircleIcon },
-  warning: { classes: 'border-amber-300 bg-amber-50 text-amber-900', icon: WarningIcon },
-  info: { classes: 'border-blue-300 bg-blue-50 text-blue-900', icon: InfoIcon },
-  success: { classes: 'border-green-300 bg-green-50 text-green-800', icon: CheckCircleIcon },
+const VARIANTS: Record<AlertVariant, { classes: string; iconClass: string; icon: Icon }> = {
+  error: { classes: 'border-agotado-borde bg-agotado-fondo text-tinta', iconClass: 'text-peligro', icon: WarningCircleIcon },
+  warning: { classes: 'border-poco-borde bg-poco-fondo text-tinta', iconClass: 'text-poco', icon: WarningIcon },
+  info: { classes: 'border-mascara/40 bg-suave text-tinta', iconClass: 'text-mascara', icon: InfoIcon },
+  success: { classes: 'border-disponible-borde bg-disponible-fondo text-tinta', iconClass: 'text-disponible', icon: CheckCircleIcon },
 }
 
 /** Mensaje en linea. Los errores se anuncian de inmediato; el resto de forma cortes. */
 export default function Alert({ variant = 'info', title, children, action }: AlertProps) {
-  const { classes, icon: AlertIcon } = VARIANTS[variant]
+  const { classes, iconClass, icon: AlertIcon } = VARIANTS[variant]
   return (
     <div
       role={variant === 'error' ? 'alert' : 'status'}
       className={cn('flex items-start gap-3 rounded-md border p-3 text-sm', classes)}
     >
-      <AlertIcon size={20} weight="fill" aria-hidden="true" className="shrink-0" />
+      <AlertIcon size={20} weight="fill" aria-hidden="true" className={cn('shrink-0', iconClass)} />
       <div className="min-w-0 flex-1">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div className={cn(title && 'mt-0.5')}>{children}</div>}

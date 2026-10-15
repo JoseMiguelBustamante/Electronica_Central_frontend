@@ -55,7 +55,7 @@ export default function ActionMenu({ label, items }: ActionMenuProps) {
       {open && (
         <div
           id={panelId}
-          className="absolute right-0 top-full z-30 mt-1 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-md"
+          className="absolute right-0 top-full z-30 mt-1 w-56 rounded-lg border border-linea bg-superficie p-1 shadow-md"
         >
           <ul>
             {items.map((item) => (
@@ -65,9 +65,9 @@ export default function ActionMenu({ label, items }: ActionMenuProps) {
                   disabled={item.disabled}
                   onClick={() => select(item)}
                   className={cn(
-                    'flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-slate-700',
-                    'hover:bg-slate-100 hover:text-slate-900',
-                    'disabled:cursor-not-allowed disabled:text-slate-500 disabled:hover:bg-transparent',
+                    'flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-tinta',
+                    'hover:bg-suave hover:text-tinta',
+                    'disabled:cursor-not-allowed disabled:text-secundario disabled:hover:bg-transparent',
                     FOCUS_RING,
                   )}
                 >

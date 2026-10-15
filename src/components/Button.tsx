@@ -11,9 +11,11 @@ interface ButtonProps extends ComponentProps<'button'> {
 }
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: 'bg-blue-700 text-white hover:bg-blue-800',
-  secondary: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100',
-  danger: 'bg-red-700 text-white hover:bg-red-800',
+  primary: 'bg-cobre text-white hover:bg-cobre-press disabled:bg-linea disabled:text-secundario',
+  secondary:
+    'border border-mascara bg-superficie text-mascara hover:bg-suave disabled:border-linea disabled:bg-superficie disabled:text-secundario',
+  danger:
+    'border border-peligro bg-superficie text-peligro hover:bg-peligro-suave disabled:border-linea disabled:text-secundario',
 }
 
 export default function Button({
@@ -33,7 +35,7 @@ export default function Button({
       className={cn(
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold',
         'transition-colors motion-reduce:transition-none',
-        'disabled:cursor-not-allowed disabled:opacity-80',
+        'disabled:cursor-not-allowed',
         VARIANT_CLASSES[variant],
         FOCUS_RING,
         className,

@@ -31,17 +31,17 @@ export default function Table<T>({ caption, columns, rows, getRowKey }: TablePro
 
   return (
     <>
-      <div className="hidden rounded-lg border border-slate-200 bg-white lg:block">
+      <div className="hidden rounded-lg border border-linea bg-superficie lg:block">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="border-b border-slate-200">
+            <tr className="border-b border-linea">
               {columns.map((column) => (
                 <th
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'px-4 py-3 text-xs font-semibold text-slate-600',
+                    'px-4 py-3 text-xs font-semibold text-secundario',
                     column.actions && 'text-right',
                     column.className,
                   )}
@@ -51,15 +51,15 @@ export default function Table<T>({ caption, columns, rows, getRowKey }: TablePro
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-linea">
             {rows.map((row) => (
               <tr key={getRowKey(row)}>
                 {columns.map((column) => (
                   <td
                     key={column.key}
                     className={cn(
-                      'px-4 py-3 align-middle text-slate-700',
-                      column.primary && 'font-medium text-slate-900',
+                      'px-4 py-3 align-middle text-tinta',
+                      column.primary && 'font-medium text-tinta',
                       column.className,
                     )}
                   >
@@ -74,18 +74,18 @@ export default function Table<T>({ caption, columns, rows, getRowKey }: TablePro
 
       <ul aria-label={caption} className="space-y-3 lg:hidden">
         {rows.map((row) => (
-          <li key={getRowKey(row)} className="rounded-lg border border-slate-200 bg-white p-4">
-            {primary && <div className="text-base font-semibold text-slate-900">{primary.cell(row)}</div>}
+          <li key={getRowKey(row)} className="rounded-lg border border-linea bg-superficie p-4">
+            {primary && <div className="text-base font-semibold text-tinta">{primary.cell(row)}</div>}
             <dl className={cn('space-y-2', primary && 'mt-3')}>
               {details.map((column) => (
                 <div key={column.key} className="flex items-start justify-between gap-4">
-                  <dt className="shrink-0 text-xs font-semibold text-slate-600">{column.header}</dt>
-                  <dd className="min-w-0 break-words text-right text-sm text-slate-700">{column.cell(row)}</dd>
+                  <dt className="shrink-0 text-xs font-semibold text-secundario">{column.header}</dt>
+                  <dd className="min-w-0 break-words text-right text-sm text-tinta">{column.cell(row)}</dd>
                 </div>
               ))}
             </dl>
             {actions && (
-              <div className="mt-3 flex justify-end border-t border-slate-200 pt-3">{actions.cell(row)}</div>
+              <div className="mt-3 flex justify-end border-t border-linea pt-3">{actions.cell(row)}</div>
             )}
           </li>
         ))}

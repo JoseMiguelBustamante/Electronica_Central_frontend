@@ -12,7 +12,7 @@ export interface FieldControlProps {
 /** Mensaje de error de un campo. Su `id` debe referenciarse con `aria-describedby`. */
 export function FieldError({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-sm text-red-700">
+    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-sm text-peligro">
       <WarningCircleIcon size={16} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
       {children}
     </p>
@@ -35,10 +35,10 @@ export default function FormField({ label, required, error, hideLabel, children 
 
   return (
     <div>
-      <label htmlFor={id} className={cn('block text-sm font-medium text-slate-900', hideLabel && 'sr-only')}>
+      <label htmlFor={id} className={cn('block text-[13px] font-semibold text-tinta', hideLabel && 'sr-only')}>
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-0.5 text-red-700">
+          <span aria-hidden="true" className="ml-0.5 text-peligro">
             *
           </span>
         )}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listarRegistrosBitacora } from '../services/bitacoraService'
-import type { RegistroBitacora } from '../utils/mockData'
+import type { RegistroBitacora } from '../types/domain'
 import type { EstadoCarga } from './estadoCarga'
 
 /** Registros de la bitacora (solo lectura). Hoy usa un servicio simulado en memoria. */

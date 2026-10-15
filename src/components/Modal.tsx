@@ -85,7 +85,7 @@ export default function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-tinta/40 sm:items-center sm:p-4">
       <div
         ref={dialogRef}
         role={role}
@@ -95,17 +95,17 @@ export default function Modal({
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
-          'flex max-h-[92dvh] w-full flex-col rounded-t-xl bg-white outline-none sm:rounded-xl',
+          'flex max-h-[92dvh] w-full flex-col rounded-t-xl bg-superficie outline-none sm:rounded-xl',
           SIZES[size],
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-linea px-5 py-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-lg font-semibold text-slate-900">
+            <h2 id={titleId} className="text-lg font-semibold text-tinta">
               {title}
             </h2>
             {description && (
-              <p id={descriptionId} className="mt-1 text-sm text-slate-600">
+              <p id={descriptionId} className="mt-1 text-sm text-secundario">
                 {description}
               </p>
             )}
@@ -114,7 +114,7 @@ export default function Modal({
         </div>
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-2 border-t border-linea px-5 py-4 sm:flex-row sm:justify-end">
             {footer}
           </div>
         )}

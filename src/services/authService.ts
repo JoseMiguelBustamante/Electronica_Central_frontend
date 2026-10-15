@@ -1,19 +1,54 @@
-export interface Credenciales {
-  correo: string
-  contrasena: string
-  recordar: boolean
+import { z } from 'zod'
+import api from '../lib/api'
+import { borrarToken, guardarToken } from '../lib/session'
+import type { SesionUsuario } from '../types/domain'
+
+const sesionUsuarioSchema = z.object({
+  id: z.string(),
+  nombreUsuario: z.string(),
+  correo: z.string(),
+  roles: z.array(z.string()),
+  permisos: z.array(z.string()).default([]),
+  cambioContrasenaObligatorio: z.boolean(),
+})
+
+const loginSchema = z.object({
+  data: z.object({
+    token: z.string(),
+    usuario: sesionUsuarioSchema,
+  }),
+})
+
+const meSchema = z.object({
+  data: sesionUsuarioSchema,
+})
+
+function leer<T>(schema: z.ZodType<T>, payload: unknown): T {
+  const parsed = schema.safeParse(payload)
+  if (!parsed.success) throw new Error('Respuesta invalida del servidor')
+  return parsed.data
 }
 
-const RETARDO_SIMULADO_MS = 800
+export async function iniciarSesion(identificador: string, contrasena: string, recordar: boolean): Promise<SesionUsuario> {
+  const { data } = await api.post('/api/auth/login', { identificador, contrasena })
+  const sesion = leer(loginSchema, data)
+  guardarToken(sesion.data.token, recordar)
+  return sesion.data.usuario
+}
 
-/**
- * Inicio de sesion simulado para el prototipo: no hay backend ni sesion real.
- * Acepta cualquier correo y contrasena no vacios. Al conectar el backend,
- * solo debe cambiar el interior de esta funcion.
- */
-export async function iniciarSesion(credenciales: Credenciales): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, RETARDO_SIMULADO_MS))
-  if (!credenciales.correo.trim() || !credenciales.contrasena) {
-    throw new Error('Credenciales incompletas')
+export async function obtenerSesion(): Promise<SesionUsuario> {
+  const { data } = await api.get('/api/auth/me')
+  return leer(meSchema, data).data
+}
+
+export async function cerrarSesion(): Promise<void> {
+  try {
+    await api.post('/api/auth/logout')
+  } finally {
+    borrarToken()
   }
+}
+
+export async function cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Promise<void> {
+  await api.post('/api/auth/cambiar-contrasena', { contrasenaActual, contrasenaNueva })
 }

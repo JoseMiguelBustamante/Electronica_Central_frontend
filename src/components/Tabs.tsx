@@ -40,7 +40,7 @@ export default function Tabs({ label, idPrefix, tabs, value, onChange }: TabsPro
       role="tablist"
       aria-label={label}
       onKeyDown={handleKeyDown}
-      className="flex gap-1 border-b border-slate-200"
+      className="flex gap-1 border-b border-linea"
     >
       {tabs.map((tab, index) => {
         const selected = tab.id === value
@@ -60,8 +60,8 @@ export default function Tabs({ label, idPrefix, tabs, value, onChange }: TabsPro
             className={cn(
               '-mb-px min-h-11 border-b-2 px-4 text-sm',
               selected
-                ? 'border-blue-700 font-semibold text-blue-800'
-                : 'border-transparent font-medium text-slate-700 hover:text-slate-900',
+                ? 'border-mascara font-semibold text-mascara'
+                : 'border-transparent font-medium text-tinta hover:text-tinta',
               FOCUS_RING,
             )}
           >

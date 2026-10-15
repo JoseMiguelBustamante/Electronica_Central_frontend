@@ -8,11 +8,12 @@ interface HeaderProps {
   user: UserInfo
   menuOpen: boolean
   onMenuClick: () => void
+  onLogout: () => void
 }
 
-export default function Header({ title, user, menuOpen, onMenuClick }: HeaderProps) {
+export default function Header({ title, user, menuOpen, onMenuClick, onLogout }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-linea bg-superficie px-4 sm:px-6">
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -21,15 +22,15 @@ export default function Header({ title, user, menuOpen, onMenuClick }: HeaderPro
           aria-expanded={menuOpen}
           aria-controls="sidebar"
           className={cn(
-            'grid size-11 place-items-center rounded-md text-slate-700 hover:bg-slate-100 lg:hidden',
+            'grid size-11 place-items-center rounded-md text-tinta hover:bg-suave lg:hidden',
             FOCUS_RING,
           )}
         >
           <ListIcon size={24} aria-hidden="true" />
         </button>
-        <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
+        <h1 className="text-lg font-semibold text-tinta">{title}</h1>
       </div>
-      <UserMenu user={user} />
+      <UserMenu user={user} onLogout={onLogout} />
     </header>
   )
 }

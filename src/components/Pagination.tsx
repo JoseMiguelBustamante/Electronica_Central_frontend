@@ -52,7 +52,7 @@ export default function Pagination({
 
   return (
     <nav aria-label={label} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p aria-live="polite" className="text-sm text-slate-600">
+      <p aria-live="polite" className="text-sm text-secundario">
         Mostrando {desde}–{hasta} de {totalItems} {itemsLabel}
       </p>
 
@@ -63,14 +63,14 @@ export default function Pagination({
             Anterior
           </Button>
 
-          <span className="text-sm text-slate-700 sm:hidden">
+          <span className="text-sm text-tinta sm:hidden">
             Página {page} de {totalPages}
           </span>
 
           <ul className="hidden items-center gap-1 sm:flex">
             {construirElementos(page, totalPages).map((elemento) =>
               elemento.tipo === 'espacio' ? (
-                <li key={elemento.clave} aria-hidden="true" className="px-1 text-slate-600">
+                <li key={elemento.clave} aria-hidden="true" className="px-1 text-secundario">
                   …
                 </li>
               ) : (
@@ -83,8 +83,8 @@ export default function Pagination({
                     className={cn(
                       'inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-sm font-medium',
                       elemento.numero === page
-                        ? 'bg-blue-700 text-white'
-                        : 'text-slate-700 hover:bg-slate-100',
+                        ? 'bg-mascara text-white'
+                        : 'text-tinta hover:bg-suave',
                       FOCUS_RING,
                     )}
                   >

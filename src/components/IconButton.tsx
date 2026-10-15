@@ -21,8 +21,8 @@ export default function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'grid size-10 shrink-0 place-items-center rounded-md text-slate-600',
-        'hover:bg-slate-100 hover:text-slate-900',
+        'grid size-10 shrink-0 place-items-center rounded-md text-secundario',
+        'hover:bg-suave hover:text-tinta',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
         FOCUS_RING,
         className,

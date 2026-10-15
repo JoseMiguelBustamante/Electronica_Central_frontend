@@ -17,9 +17,9 @@ export default function Textarea({ label, error, required, className, ...rest }:
           {...control}
           required={required}
           className={cn(
-            'block w-full rounded-md border bg-white px-3 py-2 text-base text-slate-900',
-            'disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-600',
-            error ? 'border-red-600' : 'border-slate-300 hover:border-slate-400',
+            'block w-full rounded-md border bg-superficie px-3 py-2 text-base text-tinta',
+            'disabled:cursor-not-allowed disabled:bg-fondo disabled:text-secundario',
+            error ? 'border-peligro' : 'border-campo hover:border-campo',
             FOCUS_RING,
             className,
           )}

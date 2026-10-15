@@ -12,6 +12,7 @@ export const BRAND_NAME = 'Electrónica Central AZ'
 
 export const ROUTES = {
   login: '/login',
+  catalogo: '/',
   dashboard: '/dashboard',
   usuarios: '/usuarios',
   bitacora: '/bitacora',
@@ -37,10 +38,10 @@ export const NAV_ITEMS: readonly NavItem[] = [
     description: 'Resumen general del sistema.',
   },
   {
-    label: 'Usuarios y Roles',
+    label: 'Usuarios',
     to: ROUTES.usuarios,
     icon: UsersIcon,
-    description: 'Cuentas de acceso, roles y permisos.',
+    description: 'Cuentas de acceso del sistema.',
   },
   {
     label: 'Bitácora',
@@ -58,7 +59,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: 'Categorías',
     to: ROUTES.categorias,
     icon: TagIcon,
-    description: 'Clasificación jerárquica de los productos.',
+    description: 'Clasificación de los productos.',
   },
   {
     label: 'Unidades de Medida',

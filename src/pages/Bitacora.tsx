@@ -14,7 +14,7 @@ import Table from '../components/Table'
 import type { Column } from '../components/Table'
 import { useBitacora } from '../hooks/useBitacora'
 import { formatDateTime, toDateKey } from '../utils/formatters'
-import type { RegistroBitacora, ResultadoBitacora } from '../utils/mockData'
+import type { RegistroBitacora, ResultadoBitacora } from '../types/domain'
 import { normalizeText } from '../utils/text'
 
 const TAMANO_PAGINA = 10
@@ -53,13 +53,7 @@ const columnas: Column<RegistroBitacora>[] = [
       return <Badge variant={variante}>{etiqueta}</Badge>
     },
   },
-  { key: 'usuario', header: 'Usuario', cell: (registro) => registro.usuario },
-  {
-    key: 'ip',
-    header: 'Dirección IP',
-    className: 'whitespace-nowrap',
-    cell: (registro) => <span className="font-mono text-xs">{registro.ip}</span>,
-  },
+  { key: 'usuario', header: 'Usuario', className: 'break-words', cell: (registro) => registro.usuario },
 ]
 
 export default function Bitacora() {
@@ -100,7 +94,7 @@ export default function Bitacora() {
     if (desde && dia < desde) return false
     if (hasta && dia > hasta) return false
     if (texto) {
-      const coincide = [registro.accion, registro.objeto, registro.usuario, registro.ip].some((campo) =>
+      const coincide = [registro.accion, registro.objeto, registro.usuario].some((campo) =>
         normalizeText(campo).includes(texto),
       )
       if (!coincide) return false
@@ -130,8 +124,8 @@ export default function Bitacora() {
   return (
     <div className="space-y-6">
       <header>
-        <h2 className="text-xl font-semibold text-slate-900">Bitácora</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-xl font-semibold text-tinta">Bitácora</h2>
+        <p className="mt-1 text-sm text-secundario">
           Consulte el registro de auditoría de las acciones realizadas en el sistema. La información es de solo
           lectura.
         </p>
@@ -169,10 +163,10 @@ export default function Bitacora() {
         <div className="space-y-4">
           <div role="search" aria-label="Buscar y filtrar la bitácora" className="space-y-3">
             <SearchBar
-              label="Buscar en la bitácora por acción, objeto, usuario o dirección IP"
+              label="Buscar en la bitácora por acción, objeto o usuario"
               value={busqueda}
               onChange={(valor) => filtrar(() => setBusqueda(valor))}
-              placeholder="Buscar por acción, objeto, usuario o IP…"
+              placeholder="Buscar por acción, objeto o usuario…"
             />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <Select
@@ -234,7 +228,7 @@ export default function Bitacora() {
           </div>
 
           <div ref={resultadosRef} className="flex scroll-mt-4 items-center justify-between gap-3">
-            <p aria-live="polite" className="text-sm text-slate-600">
+            <p aria-live="polite" className="text-sm text-secundario">
               {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
             </p>
             <Button variant="secondary" disabled={!filtrosActivos} onClick={limpiarFiltros}>

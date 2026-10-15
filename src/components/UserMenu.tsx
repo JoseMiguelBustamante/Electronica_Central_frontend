@@ -1,7 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { CaretDownIcon, SignOutIcon } from '@phosphor-icons/react'
-import { ROUTES } from '../utils/navigation'
 import { FOCUS_RING, cn } from '../utils/styles'
 import { useClickOutside } from '../hooks/useClickOutside'
 import { useEscapeKey } from '../hooks/useEscapeKey'
@@ -13,9 +11,10 @@ export interface UserInfo {
 
 interface UserMenuProps {
   user: UserInfo
+  onLogout: () => void
 }
 
-export default function UserMenu({ user }: UserMenuProps) {
+export default function UserMenu({ user, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -46,19 +45,19 @@ export default function UserMenu({ user }: UserMenuProps) {
         aria-controls="user-menu-panel"
         aria-label={`Menú de usuario, ${user.name}`}
         className={cn(
-          'flex min-h-11 items-center gap-2 rounded-md px-2 text-slate-700 hover:bg-slate-100',
+          'flex min-h-11 items-center gap-2 rounded-md px-2 text-tinta hover:bg-suave',
           FOCUS_RING,
         )}
       >
         <span
           aria-hidden="true"
-          className="grid size-8 place-items-center rounded-full bg-blue-700 text-xs font-semibold text-white"
+          className="grid size-8 place-items-center rounded-full bg-mascara text-xs font-semibold text-white"
         >
           {initials}
         </span>
         <span className="hidden text-left sm:block">
-          <span className="block text-sm font-medium leading-tight text-slate-900">{user.name}</span>
-          <span className="block text-xs leading-tight text-slate-600">{user.role}</span>
+          <span className="block text-sm font-medium leading-tight text-tinta">{user.name}</span>
+          <span className="block text-xs leading-tight text-secundario">{user.role}</span>
         </span>
         <CaretDownIcon size={16} aria-hidden="true" />
       </button>
@@ -66,23 +65,26 @@ export default function UserMenu({ user }: UserMenuProps) {
       {open && (
         <div
           id="user-menu-panel"
-          className="absolute right-0 z-30 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-md"
+          className="absolute right-0 z-30 mt-2 w-56 rounded-lg border border-linea bg-superficie p-1 shadow-md"
         >
-          <div className="border-b border-slate-200 px-3 py-2">
-            <p className="text-sm font-medium text-slate-900">{user.name}</p>
-            <p className="text-xs text-slate-600">{user.role}</p>
+          <div className="border-b border-linea px-3 py-2">
+            <p className="text-sm font-medium text-tinta">{user.name}</p>
+            <p className="text-xs text-secundario">{user.role}</p>
           </div>
-          <Link
-            to={ROUTES.login}
-            onClick={close}
+          <button
+            type="button"
+            onClick={() => {
+              close()
+              onLogout()
+            }}
             className={cn(
-              'mt-1 flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-slate-700 hover:bg-slate-100',
+              'mt-1 flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-sm font-medium text-tinta hover:bg-suave',
               FOCUS_RING,
             )}
           >
             <SignOutIcon size={18} aria-hidden="true" />
             Cerrar sesión
-          </Link>
+          </button>
         </div>
       )}
     </div>

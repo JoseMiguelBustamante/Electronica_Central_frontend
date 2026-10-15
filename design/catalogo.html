@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo — Electrónica Central AZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;700&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fondo: #e4e8e1;
+      --superficie: #f6f7f3;
+      --tinta: #1b2420;
+      --suave: #5e6a62;
+      --linea: #d2d8ce;
+      --cobre: #8e4b24;
+      --mascara: #1a4636;
+      --ok: #1f7a4a;
+      --poco: #a56a12;
+      --agotado: #8c342c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--fondo);
+      color: var(--tinta);
+      font-family: "Schibsted Grotesk", sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .pantalla {
+      width: min(100%, 390px);
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px 16px 32px;
+    }
+
+    .cabeza {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .marca {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .marca span {
+      display: block;
+      width: 48px;
+      height: 3px;
+      margin-top: 8px;
+      background: var(--cobre);
+    }
+
+    .ingresar {
+      min-height: 44px;
+      padding: 10px 4px;
+      color: var(--mascara);
+      font: 600 16px/1 "Schibsted Grotesk", sans-serif;
+      text-decoration: none;
+    }
+
+    .buscar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      min-height: 44px;
+      padding: 0 12px;
+      background: var(--superficie);
+      border: 1px solid var(--linea);
+      border-radius: 8px;
+    }
+
+    .buscar svg { flex: none; }
+
+    .buscar input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--tinta);
+      font: 400 16px/1.2 "Schibsted Grotesk", sans-serif;
+      outline: none;
+    }
+
+    .buscar input::placeholder { color: var(--suave); }
+
+    .filtros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .filtros select:last-child { grid-column: 1 / -1; }
+
+    select {
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--linea);
+      border-radius: 8px;
+      background: var(--superficie);
+      color: var(--tinta);
+      font: 400 15px/1 "Schibsted Grotesk", sans-serif;
+    }
+
+    .resumen {
+      margin: 16px 0 0;
+      color: var(--suave);
+      font-size: 14px;
+    }
+
+    .lista {
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .parte {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 76px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--linea);
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .muestra {
+      width: 44px;
+      height: 44px;
+      background:
+        linear-gradient(var(--cobre), var(--cobre)) 0 8px / 6px 4px no-repeat,
+        linear-gradient(var(--cobre), var(--cobre)) 0 20px / 6px 4px no-repeat,
+        linear-gradient(var(--cobre), var(--cobre)) 0 32px / 6px 4px no-repeat,
+        linear-gradient(var(--mascara), var(--mascara)) 8px 6px / 28px 32px no-repeat;
+    }
+
+    .nombre {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .codigo {
+      display: block;
+      margin-top: 2px;
+      color: var(--suave);
+      font-family: "Spline Sans Mono", monospace;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .estado {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+
+    .estado i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .ok i { background: var(--ok); }
+    .poco i { background: var(--poco); }
+    .agotado i { background: var(--agotado); }
+
+    .precio {
+      color: var(--cobre);
+      font-family: "Spline Sans Mono", monospace;
+      font-size: 18px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    .buscar:focus-within {
+      outline: 2px solid var(--mascara);
+      outline-offset: 2px;
+    }
+
+    .buscar:focus-within { outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main class="pantalla">
+    <header class="cabeza">
+      <h1 class="marca">Electrónica Central AZ<span></span></h1>
+      <a class="ingresar" href="#ingresar">Ingresar</a>
+    </header>
+
+    <form class="buscar" role="search">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <circle cx="8" cy="8" r="5.25" fill="none" stroke="#5E6A62" stroke-width="1.5"/>
+        <path d="M12 12.5 15 15.5" fill="none" stroke="#5E6A62" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <label class="sr" for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar código o nombre</label>
+      <input id="q" type="search" placeholder="Buscar código o nombre" autocomplete="off">
+    </form>
+
+    <div class="filtros">
+      <select aria-label="Categoría">
+        <option>Integrados</option>
+        <option>Módulos</option>
+        <option>Arduino</option>
+      </select>
+      <select aria-label="Marca">
+        <option>Todas las marcas</option>
+        <option>Microchip</option>
+        <option>Texas Instruments</option>
+      </select>
+      <select aria-label="Modelo">
+        <option>Todos los modelos</option>
+        <option>ATmega</option>
+        <option>ESP8266</option>
+      </select>
+    </div>
+
+    <p class="resumen">5 componentes</p>
+
+    <ul class="lista">
+      <li>
+        <a class="parte" href="#atmega328p">
+          <span class="muestra" aria-hidden="true"></span>
+          <span>
+            <span class="nombre">ATmega328P</span>
+            <span class="codigo">ATMEGA328P-PU</span>
+            <span class="estado ok"><i></i>Disponible</span>
+          </span>
+          <span class="precio">Bs 28.00</span>
+        </a>
+      </li>
+      <li>
+        <a class="parte" href="#arduino-uno">
+          <span class="muestra" aria-hidden="true"></span>
+          <span>
+            <span class="nombre">Arduino Uno R3</span>
+            <span class="codigo">ARD-UNO-R3</span>
+            <span class="estado poco"><i></i>Poco stock</span>
+          </span>
+          <span class="precio">Bs 145.00</span>
+        </a>
+      </li>
+      <li>
+        <a class="parte" href="#esp8266">
+          <span class="muestra" aria-hidden="true"></span>
+          <span>
+            <span class="nombre">Módulo ESP8266</span>
+            <span class="codigo">ESP-01</span>
+            <span class="estado agotado"><i></i>Agotado</span>
+          </span>
+          <span class="precio">Bs 22.50</span>
+        </a>
+      </li>
+      <li>
+        <a class="parte" href="#rele">
+          <span class="muestra" aria-hidden="true"></span>
+          <span>
+            <span class="nombre">Relé 5V de 1 canal</span>
+            <span class="codigo">MOD-REL-5V</span>
+            <span class="estado ok"><i></i>Disponible</span>
+          </span>
+          <span class="precio">Bs 12.00</span>
+        </a>
+      </li>
+      <li>
+        <a class="parte" href="#ne555">
+          <span class="muestra" aria-hidden="true"></span>
+          <span>
+            <span class="nombre">Temporizador 555</span>
+            <span class="codigo">NE555P</span>
+            <span class="estado poco"><i></i>Poco stock</span>
+          </span>
+          <span class="precio">Bs 4.50</span>
+        </a>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>

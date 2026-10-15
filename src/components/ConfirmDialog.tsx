@@ -57,7 +57,7 @@ export default function ConfirmDialog({
       }
     >
       <div className="space-y-3">
-        <p className="text-sm text-slate-700">{message}</p>
+        <p className="text-sm text-tinta">{message}</p>
         {error && <Alert variant="error">{error}</Alert>}
       </div>
     </Modal>
