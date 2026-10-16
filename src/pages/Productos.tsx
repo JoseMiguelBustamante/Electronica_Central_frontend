@@ -27,7 +27,7 @@ import {
   listarUnidades,
 } from '../services/catalogoService'
 import type { Categoria, Marca, Modelo, Producto, Ubicacion, Unidad } from '../types/domain'
-import { formatCurrency } from '../utils/formatters'
+import { formatCurrency, formatDateTime } from '../utils/formatters'
 import { normalizeText } from '../utils/text'
 
 interface Opciones {
@@ -93,6 +93,15 @@ export default function Productos() {
     { key: 'nombre', header: 'Nombre', primary: true, cell: (producto) => producto.nombre },
     { key: 'categoria', header: 'Categoría', cell: (producto) => producto.categoria },
     { key: 'precio', header: 'Precio', cell: (producto) => formatCurrency(producto.precio) },
+    {
+      key: 'creadoEn',
+      header: 'Creado',
+      cell: (producto) => (
+        producto.creadoEn
+          ? <time dateTime={producto.creadoEn}>{formatDateTime(producto.creadoEn)}</time>
+          : '—'
+      ),
+    },
     {
       key: 'disponibilidad',
       header: 'Disponibilidad',

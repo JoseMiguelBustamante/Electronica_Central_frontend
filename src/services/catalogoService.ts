@@ -22,6 +22,7 @@ const productoSchema = z.object({
   marca: z.string().nullable(),
   modelo: z.string().nullable(),
   disponibilidad: z.string(),
+  creado_en: z.string().nullable().optional(),
 })
 
 const paginaSchema = z.object({
@@ -210,6 +211,7 @@ export async function listarProductos(): Promise<Producto[]> {
       marca: row.marca ?? '',
       modelo: row.modelo ?? '',
       disponibilidad: row.disponibilidad,
+      creadoEn: row.creado_en ?? '',
     })))
     pagina += 1
     if (productos.length >= total || pagina > 20) break

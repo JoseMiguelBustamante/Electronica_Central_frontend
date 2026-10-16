@@ -25,6 +25,7 @@ export interface Producto {
   marca: string
   modelo: string
   disponibilidad: string
+  creadoEn: string
 }
 
 export interface Categoria {
