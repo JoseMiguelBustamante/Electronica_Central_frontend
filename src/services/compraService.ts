@@ -10,10 +10,11 @@ interface Meta {
 function mapCompra(row: Record<string, unknown>): Compra {
   return {
     id: String(row.idCompra ?? row.id_compra ?? row.id),
+    numeroComprobante: String(row.numeroComprobante ?? row.numero_comprobante ?? ''),
     fecha: String(row.fecha ?? ''),
     estado: String(row.estado ?? ''),
     idProveedor: String(row.idProveedor ?? row.id_proveedor ?? ''),
-    proveedorNombre: String(row.proveedorNombre ?? row.proveedor_nombre ?? row.razonSocial ?? ''),
+    proveedorNombre: String(row.proveedorRazonSocial ?? row.proveedorNombre ?? row.proveedor_nombre ?? row.razonSocial ?? ''),
   }
 }
 
@@ -32,6 +33,7 @@ export async function listarCompras(params?: {
 
 export async function crearCompra(datos: {
   idProveedor: string
+  numeroComprobante: string
   fecha?: string
   detalles: Array<{ idProducto: string; cantidad: number; costoUnitario: number }>
 }): Promise<void> {

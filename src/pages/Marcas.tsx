@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { PlusIcon, TagIcon } from '@phosphor-icons/react'
+import { PencilSimpleIcon, PlusIcon, TagIcon, TrashIcon } from '@phosphor-icons/react'
+import ActionMenu from '../components/ActionMenu'
 import Alert from '../components/Alert'
 import Button from '../components/Button'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import Input from '../components/Input'
 import LoadingState, { Skeleton } from '../components/LoadingState'
@@ -12,12 +14,8 @@ import type { Column } from '../components/Table'
 import type { EstadoCarga } from '../hooks/estadoCarga'
 import { useToast } from '../hooks/useToast'
 import { mensajeError } from '../lib/errors'
-import { crearMarca, listarMarcas } from '../services/catalogoService'
+import { crearMarca, editarMarca, eliminarMarca, listarMarcas } from '../services/catalogoService'
 import type { Marca } from '../types/domain'
-
-const columnas: Column<Marca>[] = [
-  { key: 'nombre', header: 'Nombre', primary: true, cell: (row) => row.nombre },
-]
 
 export default function Marcas() {
   const toast = useToast()
@@ -25,6 +23,8 @@ export default function Marcas() {
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
   const [intento, setIntento] = useState(0)
   const [creando, setCreando] = useState(false)
+  const [editando, setEditando] = useState<Marca | null>(null)
+  const [eliminando, setEliminando] = useState<Marca | null>(null)
 
   const recargar = useCallback(() => {
     setEstado('cargando')
@@ -48,12 +48,32 @@ export default function Marcas() {
     }
   }, [intento])
 
+  const columnas: Column<Marca>[] = [
+    { key: 'nombre', header: 'Nombre', primary: true, cell: (row) => row.nombre },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      actions: true,
+      cell: (row) => (
+        <ActionMenu
+          label={`Acciones de ${row.nombre}`}
+          items={[
+            { label: 'Editar', icon: PencilSimpleIcon, onSelect: () => setEditando(row) },
+            { label: 'Eliminar', icon: TrashIcon, onSelect: () => setEliminando(row) },
+          ]}
+        />
+      ),
+    },
+  ]
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-tinta">Marcas</h2>
-          <p className="mt-1 text-sm text-secundario">Marcas del catálogo para productos y modelos.</p>
+          <p className="mt-1 text-sm text-secundario">
+            Alta, edición y eliminación de marcas. No se puede eliminar una marca con productos o modelos asociados.
+          </p>
         </div>
         <Button onClick={() => setCreando(true)}>
           <PlusIcon size={18} aria-hidden="true" />
@@ -86,18 +106,49 @@ export default function Marcas() {
           }}
         />
       )}
+
+      {editando && (
+        <FormularioMarca
+          inicial={editando}
+          onClose={() => setEditando(null)}
+          onSubmit={async (nombre) => {
+            await editarMarca(editando.id, nombre)
+            toast.success('Marca actualizada.')
+            setEditando(null)
+            recargar()
+          }}
+        />
+      )}
+
+      {eliminando && (
+        <ConfirmDialog
+          title="Eliminar marca"
+          message={`Se eliminará la marca «${eliminando.nombre}».`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onCancel={() => setEliminando(null)}
+          onConfirm={async () => {
+            await eliminarMarca(eliminando.id)
+            toast.success('Marca eliminada.')
+            setEliminando(null)
+            recargar()
+          }}
+        />
+      )}
     </div>
   )
 }
 
 function FormularioMarca({
+  inicial,
   onClose,
   onSubmit,
 }: {
+  inicial?: Marca
   onClose: () => void
   onSubmit: (nombre: string) => Promise<void>
 }) {
-  const [nombre, setNombre] = useState('')
+  const [nombre, setNombre] = useState(inicial?.nombre ?? '')
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -108,13 +159,18 @@ function FormularioMarca({
     try {
       await onSubmit(nombre)
     } catch (err) {
-      setError(mensajeError(err, 'No se pudo crear la marca.'))
+      setError(mensajeError(err, inicial ? 'No se pudo guardar la marca.' : 'No se pudo crear la marca.'))
       setOcupado(false)
     }
   }
 
   return (
-    <Modal title="Nueva marca" onClose={onClose} busy={ocupado} footer={<Button type="submit" form="form-marca" loading={ocupado}>Crear</Button>}>
+    <Modal
+      title={inicial ? 'Editar marca' : 'Nueva marca'}
+      onClose={onClose}
+      busy={ocupado}
+      footer={<Button type="submit" form="form-marca" loading={ocupado}>{inicial ? 'Guardar' : 'Crear'}</Button>}
+    >
       <form id="form-marca" onSubmit={enviar} className="space-y-4">
         {error && <p className="text-sm text-peligro">{error}</p>}
         <Input label="Nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />

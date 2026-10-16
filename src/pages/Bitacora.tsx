@@ -54,6 +54,8 @@ const columnas: Column<RegistroBitacora>[] = [
     },
   },
   { key: 'usuario', header: 'Usuario', className: 'break-words', cell: (registro) => registro.usuario },
+  { key: 'tabla', header: 'Tabla', cell: (registro) => registro.tabla || '—' },
+  { key: 'ip', header: 'IP', className: 'whitespace-nowrap', cell: (registro) => registro.direccionIp || '—' },
 ]
 
 export default function Bitacora() {
@@ -61,6 +63,7 @@ export default function Bitacora() {
   const [busqueda, setBusqueda] = useState('')
   const [accion, setAccion] = useState('')
   const [usuario, setUsuario] = useState('')
+  const [tabla, setTabla] = useState('')
   const [resultado, setResultado] = useState<FiltroResultado>('todos')
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
@@ -69,6 +72,10 @@ export default function Bitacora() {
 
   const acciones = useMemo(
     () => [...new Set(registros.map((r) => r.accion))].sort((a, b) => a.localeCompare(b, 'es')),
+    [registros],
+  )
+  const tablas = useMemo(
+    () => [...new Set(registros.map((r) => r.tabla).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
     [registros],
   )
   const usuarios = useMemo(
@@ -84,17 +91,18 @@ export default function Bitacora() {
 
   const rangoInvalido = desde !== '' && hasta !== '' && desde > hasta
   const texto = normalizeText(busqueda.trim())
-  const filtrosActivos = texto !== '' || accion !== '' || usuario !== '' || resultado !== 'todos' || desde !== '' || hasta !== ''
+  const filtrosActivos = texto !== '' || accion !== '' || usuario !== '' || tabla !== '' || resultado !== 'todos' || desde !== '' || hasta !== ''
 
   const filtrados = registros.filter((registro) => {
     if (accion && registro.accion !== accion) return false
     if (usuario && registro.usuario !== usuario) return false
+    if (tabla && registro.tabla !== tabla) return false
     if (resultado !== 'todos' && registro.resultado !== resultado) return false
     const dia = toDateKey(registro.fechaHora)
     if (desde && dia < desde) return false
     if (hasta && dia > hasta) return false
     if (texto) {
-      const coincide = [registro.accion, registro.objeto, registro.usuario].some((campo) =>
+      const coincide = [registro.accion, registro.objeto, registro.usuario, registro.direccionIp].some((campo) =>
         normalizeText(campo).includes(texto),
       )
       if (!coincide) return false
@@ -110,6 +118,7 @@ export default function Bitacora() {
     setBusqueda('')
     setAccion('')
     setUsuario('')
+    setTabla('')
     setResultado('todos')
     setDesde('')
     setHasta('')
@@ -163,12 +172,12 @@ export default function Bitacora() {
         <div className="space-y-4">
           <div role="search" aria-label="Buscar y filtrar la bitácora" className="space-y-3">
             <SearchBar
-              label="Buscar en la bitácora por acción, objeto o usuario"
+              label="Buscar en la bitácora por acción, objeto, usuario o IP"
               value={busqueda}
               onChange={(valor) => filtrar(() => setBusqueda(valor))}
-              placeholder="Buscar por acción, objeto o usuario…"
+              placeholder="Buscar por acción, objeto, usuario o IP…"
             />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Select
                 label="Acción"
                 name="accion"
@@ -190,6 +199,19 @@ export default function Bitacora() {
               >
                 <option value="">Todos</option>
                 {usuarios.map((nombre) => (
+                  <option key={nombre} value={nombre}>
+                    {nombre}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="Tabla"
+                name="tabla"
+                value={tabla}
+                onChange={(event) => filtrar(() => setTabla(event.target.value))}
+              >
+                <option value="">Todas</option>
+                {tablas.map((nombre) => (
                   <option key={nombre} value={nombre}>
                     {nombre}
                   </option>

@@ -61,6 +61,7 @@ export default function Compras() {
 
   const columnas: Column<Compra>[] = [
     { key: 'fecha', header: 'Fecha', cell: (row) => (row.fecha ? formatDateTime(row.fecha) : '—') },
+    { key: 'comprobante', header: 'Comprobante', cell: (row) => row.numeroComprobante || '—' },
     { key: 'prov', header: 'Proveedor', primary: true, cell: (row) => row.proveedorNombre || row.idProveedor },
     {
       key: 'estado',
@@ -178,10 +179,12 @@ function FormularioCompra({
   onClose: () => void
   onSubmit: (datos: {
     idProveedor: string
+    numeroComprobante: string
     detalles: Array<{ idProducto: string; cantidad: number; costoUnitario: number }>
   }) => Promise<void>
 }) {
   const [idProveedor, setIdProveedor] = useState('')
+  const [numeroComprobante, setNumeroComprobante] = useState('')
   const [idProducto, setIdProducto] = useState('')
   const [cantidad, setCantidad] = useState('1')
   const [costo, setCosto] = useState('0')
@@ -195,6 +198,7 @@ function FormularioCompra({
     try {
       await onSubmit({
         idProveedor,
+        numeroComprobante: numeroComprobante.trim(),
         detalles: [{ idProducto, cantidad: Number(cantidad), costoUnitario: Number(costo) }],
       })
     } catch (err) {
@@ -224,6 +228,7 @@ function FormularioCompra({
             </option>
           ))}
         </Select>
+        <Input label="N.º de comprobante" name="numeroComprobante" required maxLength={120} value={numeroComprobante} onChange={(e) => setNumeroComprobante(e.target.value)} />
         <Select label="Producto" required value={idProducto} onChange={(e) => setIdProducto(e.target.value)}>
           <option value="">Seleccione…</option>
           {productos.map((p) => (

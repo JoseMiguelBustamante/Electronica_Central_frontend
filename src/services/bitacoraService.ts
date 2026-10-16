@@ -11,6 +11,8 @@ const registroSchema = z.object({
   resultado: z.string(),
   id_usuario: z.string().nullable(),
   usuario: z.string(),
+  direccion_ip: z.string().nullable().optional(),
+  tabla_afectada: z.string().nullable().optional(),
 })
 
 const listaSchema = z.object({ data: z.array(registroSchema) })
@@ -18,12 +20,31 @@ const listaSchema = z.object({ data: z.array(registroSchema) })
 const mapResultado = (valor: string): ResultadoBitacora => {
   const normalizado = valor.trim().toUpperCase()
   if (normalizado === 'OK' || normalizado === 'EXITO' || normalizado === 'ÉXITO') return 'exito'
-  if (normalizado === 'ERROR') return 'error'
+  if (normalizado === 'ERROR' || normalizado === 'FALLIDO') return 'error'
   return 'advertencia'
 }
 
-export async function listarRegistrosBitacora(): Promise<RegistroBitacora[]> {
-  const { data } = await api.get('/api/bitacora')
+/** Filtros del servidor (CU-3). Las fechas van como YYYY-MM-DD en hora de La Paz. */
+export interface FiltrosBitacora {
+  desde?: string
+  hasta?: string
+  usuario?: string
+  accion?: string
+  tabla?: string
+  limite?: number
+}
+
+export async function listarRegistrosBitacora(filtros: FiltrosBitacora = {}): Promise<RegistroBitacora[]> {
+  const { data } = await api.get('/api/bitacora', {
+    params: {
+      desde: filtros.desde || undefined,
+      hasta: filtros.hasta || undefined,
+      usuario: filtros.usuario || undefined,
+      accion: filtros.accion || undefined,
+      tabla: filtros.tabla || undefined,
+      limite: filtros.limite ?? 2000,
+    },
+  })
   const parsed = listaSchema.safeParse(data)
   if (!parsed.success) throw new Error('Respuesta invalida del servidor')
   return parsed.data.data.map((row) => ({
@@ -33,5 +54,7 @@ export async function listarRegistrosBitacora(): Promise<RegistroBitacora[]> {
     objeto: row.objeto,
     resultado: mapResultado(row.resultado),
     usuario: row.usuario,
+    direccionIp: row.direccion_ip ?? '',
+    tabla: row.tabla_afectada ?? '',
   }))
 }

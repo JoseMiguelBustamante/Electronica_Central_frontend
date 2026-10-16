@@ -6,23 +6,24 @@ Frontend del sistema administrativo para **Electrónica Central AZ**, desarrolla
 
 Aplicación web frontend para la gestión administrativa de una tienda de productos electrónicos.
 
-El frontend cubre el **Ciclo 1** (UI admin + catálogo público) y consume la API real del backend (ya no usa mocks).
-
-El **Ciclo 2** del perfil (inventario, proveedores, compras, compatibilidad) está implementado en el **backend**; las pantallas de UI correspondientes todavía faltan. Estado verificado: `Electronica_Central_Backend/docs/ciclo-2-verificacion.md` (perfil: `docs/PerfilGrupo14_2doCiclo.docx`).
+El frontend cubre los **Ciclos 1 a 4** del perfil (UI admin + catálogo público) y consume la API real del backend (no usa mocks). Estado verificado de los ciclos 1 y 2: `Electronica_Central_Backend/docs/ciclo-2-verificacion.md` (perfil: `docs/PerfilGrupo14_2doCiclo.docx`).
 
 ## Funcionalidades
 
 ### Ciclo 1
 
-* Inicio de sesión, panel, usuarios, bitácora
-* Productos, categorías, unidades, marcas, modelos
-* Catálogo público (responsive)
+* Inicio de sesión, panel
+* Usuarios: alta, edición, rol (administrador / vendedor), activar / desactivar
+* Productos: alta, edición (precio de compra, margen, precio de venta), activar / desactivar
+* Categorías, unidades, marcas y modelos: alta, edición y eliminación
+* Catálogo público (responsive) con compatibilidades en el detalle
 
 ### Ciclo 2
 
 * Inventario (listado, ajuste, stock mínimo)
-* Proveedores y compras (alta, recibir, cancelar)
-* Compatibilidades producto ↔ modelo
+* Proveedores y compras (alta con n.º de comprobante único, recibir, cancelar)
+* Compatibilidades producto ↔ modelo (consultar, agregar, quitar)
+* Bitácora con IP y tabla afectada
 
 ### Ciclo 3
 
@@ -173,24 +174,15 @@ src/
 ├── hooks/           # Hooks personalizados
 ├── layouts/         # Layout principal
 ├── pages/           # Vistas de la aplicación
-├── services/        # Servicios y lógica de datos mock
+├── services/        # Clientes de la API (axios + zod)
 └── utils/           # Utilidades y datos iniciales
 ```
 
 ## Estado del proyecto
 
-**Ciclo 1 — Implementado**
+**Ciclos 1 y 2 — Implementados** (CU-1 a CU-13), conectados al backend.
 
-Incluye:
-
-* CU-1 — Iniciar sesión
-* CU-2 — Gestionar usuarios y roles
-* CU-3 — Bitácora
-* CU-4 — Gestionar productos
-* CU-5 — Gestionar categorías
-* CU-8 — Unidades de medida
-
-El backend será integrado posteriormente.
+**Ciclos 3 y 4 — Implementados** (clientes, ventas, pagos, solicitudes y reportes).
 
 ## Diseño
 

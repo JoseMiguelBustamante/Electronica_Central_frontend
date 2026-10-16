@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import api from '../lib/api'
-import type { DatosUsuario, Usuario } from '../types/domain'
+import type { CambiosUsuario, DatosUsuario, Usuario } from '../types/domain'
 
 const usuarioSchema = z.object({
   id_usuario: z.string(),
@@ -37,4 +37,8 @@ export async function crearUsuario(datos: DatosUsuario): Promise<void> {
 
 export async function restablecerUsuario(id: string, contrasenaTemporal: string): Promise<void> {
   await api.post(`/api/usuarios/${id}/restablecer`, { contrasenaTemporal })
+}
+
+export async function editarUsuario(id: string, cambios: CambiosUsuario): Promise<void> {
+  await api.patch(`/api/usuarios/${id}`, cambios)
 }

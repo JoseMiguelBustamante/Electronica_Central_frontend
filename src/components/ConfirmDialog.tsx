@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Alert from './Alert'
 import Button from './Button'
 import Modal from './Modal'
+import { mensajeError } from '../lib/errors'
 
 interface ConfirmDialogProps {
   title: string
@@ -33,7 +34,7 @@ export default function ConfirmDialog({
     try {
       await onConfirm()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo completar la operación.')
+      setError(mensajeError(err, 'No se pudo completar la operación.'))
       setLoading(false)
     }
   }

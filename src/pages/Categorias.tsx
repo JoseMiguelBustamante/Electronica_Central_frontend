@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { PlusIcon, TagIcon } from '@phosphor-icons/react'
+import { PencilSimpleIcon, PlusIcon, TagIcon, TrashIcon } from '@phosphor-icons/react'
+import ActionMenu from '../components/ActionMenu'
 import Alert from '../components/Alert'
 import Button from '../components/Button'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import Input from '../components/Input'
 import LoadingState, { Skeleton } from '../components/LoadingState'
@@ -13,13 +15,8 @@ import Textarea from '../components/Textarea'
 import { useToast } from '../hooks/useToast'
 import type { EstadoCarga } from '../hooks/estadoCarga'
 import { mensajeError } from '../lib/errors'
-import { crearCategoria, listarCategorias } from '../services/catalogoService'
+import { crearCategoria, editarCategoria, eliminarCategoria, listarCategorias } from '../services/catalogoService'
 import type { Categoria } from '../types/domain'
-
-const columnas: Column<Categoria>[] = [
-  { key: 'nombre', header: 'Nombre', primary: true, cell: (categoria) => categoria.nombre },
-  { key: 'descripcion', header: 'Descripción', className: 'break-words', cell: (categoria) => categoria.descripcion || '—' },
-]
 
 export default function Categorias() {
   const toast = useToast()
@@ -27,6 +24,8 @@ export default function Categorias() {
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
   const [intento, setIntento] = useState(0)
   const [creando, setCreando] = useState(false)
+  const [editando, setEditando] = useState<Categoria | null>(null)
+  const [eliminando, setEliminando] = useState<Categoria | null>(null)
   const recargar = useCallback(() => {
     setEstado('cargando')
     setIntento((n) => n + 1)
@@ -49,13 +48,32 @@ export default function Categorias() {
     }
   }, [intento])
 
+  const columnas: Column<Categoria>[] = [
+    { key: 'nombre', header: 'Nombre', primary: true, cell: (categoria) => categoria.nombre },
+    { key: 'descripcion', header: 'Descripción', className: 'break-words', cell: (categoria) => categoria.descripcion || '—' },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      actions: true,
+      cell: (categoria) => (
+        <ActionMenu
+          label={`Acciones de ${categoria.nombre}`}
+          items={[
+            { label: 'Editar', icon: PencilSimpleIcon, onSelect: () => setEditando(categoria) },
+            { label: 'Eliminar', icon: TrashIcon, onSelect: () => setEliminando(categoria) },
+          ]}
+        />
+      ),
+    },
+  ]
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-tinta">Categorías</h2>
           <p className="mt-1 text-sm text-secundario">
-            Altas de categoría. La API no guarda categoría padre ni permite editar o desactivar.
+            Alta, edición y eliminación de categorías. No se puede eliminar una categoría con productos asociados.
           </p>
         </div>
         <Button onClick={() => setCreando(true)}>
@@ -87,19 +105,50 @@ export default function Categorias() {
           }}
         />
       )}
+
+      {editando && (
+        <FormularioCategoria
+          inicial={editando}
+          onClose={() => setEditando(null)}
+          onSubmit={async (nombre, descripcion) => {
+            await editarCategoria(editando.id, { nombre, descripcion })
+            toast.success('Categoría actualizada.')
+            setEditando(null)
+            recargar()
+          }}
+        />
+      )}
+
+      {eliminando && (
+        <ConfirmDialog
+          title="Eliminar categoría"
+          message={`Se eliminará la categoría «${eliminando.nombre}».`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onCancel={() => setEliminando(null)}
+          onConfirm={async () => {
+            await eliminarCategoria(eliminando.id)
+            toast.success('Categoría eliminada.')
+            setEliminando(null)
+            recargar()
+          }}
+        />
+      )}
     </div>
   )
 }
 
 function FormularioCategoria({
+  inicial,
   onClose,
   onSubmit,
 }: {
+  inicial?: Categoria
   onClose: () => void
   onSubmit: (nombre: string, descripcion: string) => Promise<void>
 }) {
-  const [nombre, setNombre] = useState('')
-  const [descripcion, setDescripcion] = useState('')
+  const [nombre, setNombre] = useState(inicial?.nombre ?? '')
+  const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? '')
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -110,13 +159,18 @@ function FormularioCategoria({
     try {
       await onSubmit(nombre, descripcion)
     } catch (err) {
-      setError(mensajeError(err, 'No se pudo crear la categoría.'))
+      setError(mensajeError(err, inicial ? 'No se pudo guardar la categoría.' : 'No se pudo crear la categoría.'))
       setOcupado(false)
     }
   }
 
   return (
-    <Modal title="Nueva categoría" onClose={onClose} busy={ocupado} footer={<Button type="submit" form="form-categoria" loading={ocupado}>Crear</Button>}>
+    <Modal
+      title={inicial ? 'Editar categoría' : 'Nueva categoría'}
+      onClose={onClose}
+      busy={ocupado}
+      footer={<Button type="submit" form="form-categoria" loading={ocupado}>{inicial ? 'Guardar' : 'Crear'}</Button>}
+    >
       <form id="form-categoria" onSubmit={enviar} className="space-y-4">
         {error && <p className="text-sm text-peligro">{error}</p>}
         <Input label="Nombre" name="nombre" required value={nombre} onChange={(event) => setNombre(event.target.value)} />

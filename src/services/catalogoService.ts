@@ -2,12 +2,14 @@ import { z } from 'zod'
 import api from '../lib/api'
 import type {
   Categoria,
+  Compatibilidad,
   DatosCategoria,
   DatosProducto,
   DatosUnidad,
   Marca,
   Modelo,
   Producto,
+  ProductoAdmin,
   Ubicacion,
   Unidad,
 } from '../types/domain'
@@ -66,6 +68,53 @@ const modeloSchema = z.object({
   id_marca: z.string(),
 })
 
+const productoAdminSchema = z.object({
+  id_producto: z.string(),
+  codigo: z.string(),
+  nombre: z.string(),
+  descripcion: z.string().nullable(),
+  precio_venta: z.coerce.number(),
+  precio_compra: z.coerce.number(),
+  margen_ganancia: z.coerce.number(),
+  activo: z.boolean(),
+  creado_en: z.string().nullable().optional(),
+  id_categoria: z.string(),
+  categoria: z.string(),
+  id_unidad_medida: z.string(),
+  unidad: z.string(),
+  id_ubicacion: z.string(),
+  ubicacion: z.string(),
+  id_marca: z.string().nullable(),
+  marca: z.string().nullable(),
+  id_modelo: z.string().nullable(),
+  modelo: z.string().nullable(),
+  stock_actual: z.coerce.number().nullable(),
+  stock_minimo: z.coerce.number().nullable(),
+})
+
+const paginaAdminSchema = z.object({
+  data: z.array(productoAdminSchema),
+  meta: z.object({ pagina: z.number(), limite: z.number(), total: z.number() }),
+})
+
+const compatibilidadSchema = z.object({
+  id_modelo: z.string(),
+  modelo: z.string(),
+  id_marca: z.string(),
+  marca: z.string(),
+  observaciones: z.string().nullable(),
+})
+
+function mapearCompatibilidad(row: z.infer<typeof compatibilidadSchema>): Compatibilidad {
+  return {
+    idModelo: row.id_modelo,
+    modelo: row.modelo,
+    idMarca: row.id_marca,
+    marca: row.marca,
+    observaciones: row.observaciones ?? '',
+  }
+}
+
 function leer<T>(schema: z.ZodType<T>, payload: unknown): T {
   const parsed = schema.safeParse(payload)
   if (!parsed.success) throw new Error('Respuesta invalida del servidor')
@@ -82,6 +131,7 @@ export interface ProductoPublico {
   marca: string
   modelo: string
   disponibilidad: string
+  compatibilidades: Compatibilidad[]
 }
 
 export interface OpcionFiltro {
@@ -112,6 +162,7 @@ interface ProductoPublicoApi {
   marca: string | null
   modelo: string | null
   disponibilidad: string
+  compatibilidades?: Array<z.infer<typeof compatibilidadSchema>>
 }
 
 interface FiltrosApi {
@@ -131,6 +182,7 @@ function mapearProductoPublico(row: ProductoPublicoApi): ProductoPublico {
     marca: row.marca?.trim() || 'Sin marca',
     modelo: row.modelo?.trim() || '',
     disponibilidad: row.disponibilidad,
+    compatibilidades: (row.compatibilidades ?? []).map(mapearCompatibilidad),
   }
 }
 
@@ -236,6 +288,15 @@ export async function crearCategoria(datos: DatosCategoria): Promise<void> {
   })
 }
 
+export async function editarCategoria(id: string, datos: DatosCategoria): Promise<void> {
+  await api.patch(`/api/categorias/${id}`, { nombre: datos.nombre, descripcion: datos.descripcion })
+}
+
+/** Falla con 409 si la categoría tiene productos; mensajeError() muestra el motivo de la API. */
+export async function eliminarCategoria(id: string): Promise<void> {
+  await api.delete(`/api/categorias/${id}`)
+}
+
 export async function listarUnidades(): Promise<Unidad[]> {
   const { data } = await api.get('/api/unidades')
   return leer(z.object({ data: z.array(unidadSchema) }), data).data.map((row) => ({
@@ -248,6 +309,14 @@ export async function listarUnidades(): Promise<Unidad[]> {
 
 export async function crearUnidad(datos: DatosUnidad): Promise<void> {
   await api.post('/api/unidades', datos)
+}
+
+export async function editarUnidad(id: string, datos: DatosUnidad): Promise<void> {
+  await api.patch(`/api/unidades/${id}`, datos)
+}
+
+export async function eliminarUnidad(id: string): Promise<void> {
+  await api.delete(`/api/unidades/${id}`)
 }
 
 export async function listarUbicaciones(): Promise<Ubicacion[]> {
@@ -272,11 +341,20 @@ export async function crearMarca(nombre: string): Promise<void> {
   await api.post('/api/marcas', { nombre })
 }
 
+export async function editarMarca(id: string, nombre: string): Promise<void> {
+  await api.patch(`/api/marcas/${id}`, { nombre })
+}
+
+export async function eliminarMarca(id: string): Promise<void> {
+  await api.delete(`/api/marcas/${id}`)
+}
+
 export async function listarModelos(): Promise<Modelo[]> {
   const { data } = await api.get('/api/modelos')
   return leer(z.object({ data: z.array(modeloSchema) }), data).data.map((row) => ({
     id: row.id_modelo,
     nombre: row.nombre,
+    descripcion: row.descripcion ?? '',
     idMarca: row.id_marca,
   }))
 }
@@ -291,6 +369,23 @@ export async function crearModelo(datos: {
     descripcion: datos.descripcion || undefined,
     idMarca: datos.idMarca,
   })
+}
+
+export async function editarModelo(id: string, datos: {
+  nombre: string
+  descripcion: string
+  idMarca: string
+}): Promise<void> {
+  await api.patch(`/api/modelos/${id}`, datos)
+}
+
+export async function eliminarModelo(id: string): Promise<void> {
+  await api.delete(`/api/modelos/${id}`)
+}
+
+export async function listarCompatibilidades(idProducto: string): Promise<Compatibilidad[]> {
+  const { data } = await api.get(`/api/productos/${idProducto}/compatibilidades`)
+  return leer(z.object({ data: z.array(compatibilidadSchema) }), data).data.map(mapearCompatibilidad)
 }
 
 export async function agregarCompatibilidad(
@@ -320,9 +415,79 @@ export async function crearProducto(datos: DatosProducto): Promise<void> {
     idMarca: datos.idMarca || undefined,
     idModelo: datos.idModelo || undefined,
     stockMinimo: datos.stockMinimo,
+    precioCompra: datos.precioCompra,
+    margenGanancia: datos.margenGanancia,
   })
 }
 
-export async function desactivarProducto(id: string): Promise<void> {
-  await api.patch(`/api/productos/${id}`, { activo: false })
+/** Edición completa (CU-4). Marca/modelo vacíos se envían como null para quitarlos. */
+export async function editarProducto(id: string, datos: DatosProducto): Promise<void> {
+  await api.patch(`/api/productos/${id}`, {
+    codigo: datos.codigo,
+    nombre: datos.nombre,
+    descripcion: datos.descripcion || null,
+    precioVenta: datos.precioVenta,
+    precioCompra: datos.precioCompra,
+    margenGanancia: datos.margenGanancia,
+    idCategoria: datos.idCategoria,
+    idUnidadMedida: datos.idUnidadMedida,
+    idUbicacion: datos.idUbicacion,
+    idMarca: datos.idMarca || null,
+    idModelo: datos.idModelo || null,
+    stockMinimo: datos.stockMinimo,
+  })
+}
+
+export async function cambiarEstadoProducto(id: string, activo: boolean): Promise<void> {
+  await api.patch(`/api/productos/${id}`, { activo })
+}
+
+export type EstadoProductoFiltro = 'activos' | 'inactivos' | 'todos'
+
+export async function listarProductosAdmin(filtros: {
+  buscar?: string
+  estado?: EstadoProductoFiltro
+  pagina?: number
+  limite?: number
+}): Promise<{ productos: ProductoAdmin[]; total: number }> {
+  const { data } = await api.get('/api/productos', {
+    params: {
+      buscar: filtros.buscar || undefined,
+      estado: filtros.estado ?? 'todos',
+      pagina: filtros.pagina ?? 1,
+      limite: filtros.limite ?? 20,
+    },
+  })
+  const parsed = leer(paginaAdminSchema, data)
+  return {
+    total: parsed.meta.total,
+    productos: parsed.data.map((row) => ({
+      id: row.id_producto,
+      codigo: row.codigo,
+      nombre: row.nombre,
+      descripcion: row.descripcion ?? '',
+      precioVenta: row.precio_venta,
+      precioCompra: row.precio_compra,
+      margenGanancia: row.margen_ganancia,
+      activo: row.activo,
+      creadoEn: row.creado_en ?? '',
+      idCategoria: row.id_categoria,
+      categoria: row.categoria,
+      idUnidadMedida: row.id_unidad_medida,
+      unidad: row.unidad,
+      idUbicacion: row.id_ubicacion,
+      ubicacion: row.ubicacion,
+      idMarca: row.id_marca ?? '',
+      marca: row.marca ?? '',
+      idModelo: row.id_modelo ?? '',
+      modelo: row.modelo ?? '',
+      stockActual: row.stock_actual ?? 0,
+      stockMinimo: row.stock_minimo ?? 0,
+    })),
+  }
+}
+
+/** Precio de venta sugerido: compra × (1 + margen %), redondeado a centavos. */
+export function precioConMargen(precioCompra: number, margenGanancia: number): number {
+  return Math.round(precioCompra * (1 + margenGanancia / 100) * 100) / 100
 }

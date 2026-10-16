@@ -28,6 +28,39 @@ export interface Producto {
   creadoEn: string
 }
 
+/** Fila del listado de administración (GET /api/productos): incluye inactivos, costos y stock. */
+export interface ProductoAdmin {
+  id: string
+  codigo: string
+  nombre: string
+  descripcion: string
+  precioVenta: number
+  precioCompra: number
+  margenGanancia: number
+  activo: boolean
+  creadoEn: string
+  idCategoria: string
+  categoria: string
+  idUnidadMedida: string
+  unidad: string
+  idUbicacion: string
+  ubicacion: string
+  idMarca: string
+  marca: string
+  idModelo: string
+  modelo: string
+  stockActual: number
+  stockMinimo: number
+}
+
+export interface Compatibilidad {
+  idModelo: string
+  modelo: string
+  idMarca: string
+  marca: string
+  observaciones: string
+}
+
 export interface Categoria {
   id: string
   nombre: string
@@ -56,6 +89,7 @@ export interface Marca {
 export interface Modelo {
   id: string
   nombre: string
+  descripcion: string
   idMarca: string
 }
 
@@ -68,6 +102,8 @@ export interface RegistroBitacora {
   objeto: string
   resultado: ResultadoBitacora
   usuario: string
+  direccionIp: string
+  tabla: string
 }
 
 export interface DatosProducto {
@@ -81,13 +117,24 @@ export interface DatosProducto {
   idMarca: string
   idModelo: string
   stockMinimo: number
+  precioCompra: number
+  margenGanancia: number
 }
+
+export type RolEmpleado = 'ADMINISTRADOR' | 'VENDEDOR'
 
 export interface DatosUsuario {
   nombreUsuario: string
   correo: string
   contrasena: string
-  roles: Array<'VENDEDOR'>
+  roles: RolEmpleado[]
+}
+
+export interface CambiosUsuario {
+  nombreUsuario?: string
+  correo?: string
+  activo?: boolean
+  roles?: RolEmpleado[]
 }
 
 export interface DatosCategoria {
@@ -132,6 +179,7 @@ export interface Proveedor {
 
 export interface Compra {
   id: string
+  numeroComprobante: string
   fecha: string
   estado: string
   idProveedor: string

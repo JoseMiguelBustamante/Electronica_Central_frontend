@@ -146,6 +146,23 @@ export default function DetallePublico() {
           {producto.descripcion && (
             <p className="mt-5 text-sm leading-6 text-tinta">{producto.descripcion}</p>
           )}
+          {producto.compatibilidades.length > 0 && (
+            <section className="mt-5" aria-labelledby="titulo-compatibles">
+              <h2 id="titulo-compatibles" className="text-sm font-semibold tracking-wide text-secundario uppercase">
+                Compatible con
+              </h2>
+              <ul className="mt-2 space-y-1 text-sm text-tinta">
+                {producto.compatibilidades.map((compatible) => (
+                  <li key={compatible.idModelo}>
+                    {compatible.marca} {compatible.modelo}
+                    {compatible.observaciones && (
+                      <span className="text-secundario"> — {compatible.observaciones}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <div className="mt-6 rounded-lg border border-linea bg-superficie p-4">
             {aviso && (
