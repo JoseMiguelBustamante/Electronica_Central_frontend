@@ -6,6 +6,7 @@ import Input from '../components/Input'
 import { useLoginForm } from '../hooks/useLoginForm'
 import { BRAND_NAME, ROUTES } from '../utils/navigation'
 import { FOCUS_RING, cn } from '../utils/styles'
+import fachadaFondo from '../assets/electronica-central-fachada.jpg'
 
 export default function Login() {
   const form = useLoginForm()
@@ -15,8 +16,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <main className="flex min-h-dvh items-center bg-fondo px-6 py-16 sm:px-10 lg:px-20">
-      <div className="mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_28rem]">
+    <main className="relative flex min-h-dvh items-center overflow-hidden bg-fondo px-6 py-16 sm:px-10 lg:px-20">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-15"
+        style={{ backgroundImage: `url(${fachadaFondo})` }}
+      />
+      <div className="relative z-10 mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_28rem]">
         <header>
           <p translate="no" className="text-xl font-bold text-mascara">
             {BRAND_NAME}
