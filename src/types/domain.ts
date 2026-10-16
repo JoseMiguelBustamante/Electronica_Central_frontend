@@ -86,7 +86,7 @@ export interface DatosUsuario {
   nombreUsuario: string
   correo: string
   contrasena: string
-  roles: Array<'VENDEDOR' | 'CLIENTE'>
+  roles: Array<'VENDEDOR'>
 }
 
 export interface DatosCategoria {

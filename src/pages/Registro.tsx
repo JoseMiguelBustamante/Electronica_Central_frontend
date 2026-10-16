@@ -7,6 +7,7 @@ import Input from '../components/Input'
 import { mensajeError } from '../lib/errors'
 import { registrarCuentaCliente } from '../services/authService'
 import { BRAND_NAME, ROUTES } from '../utils/navigation'
+import { PASSWORD_POLICY_HINT, validarPoliticaContrasena } from '../utils/passwordPolicy'
 import { FOCUS_RING, cn } from '../utils/styles'
 
 export default function Registro() {
@@ -26,8 +27,9 @@ export default function Registro() {
     event.preventDefault()
     if (loading) return
 
-    if (contrasena.length < 12) {
-      setError('La contraseña debe tener al menos 12 caracteres.')
+    const politica = validarPoliticaContrasena(contrasena)
+    if (politica) {
+      setError(politica)
       return
     }
     if (contrasena !== confirmacion) {
@@ -148,7 +150,7 @@ export default function Registro() {
                 </button>
               }
             />
-            <p className="text-xs text-secundario">Mínimo 12 caracteres.</p>
+            <p className="text-xs text-secundario">{PASSWORD_POLICY_HINT}</p>
             <Input
               label="Confirmar contraseña"
               name="confirmacion"

@@ -11,6 +11,7 @@ export default function Login() {
   const form = useLoginForm()
   const [searchParams] = useSearchParams()
   const registrado = searchParams.get('registrado') === '1'
+  const restablecido = searchParams.get('restablecido') === '1'
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -40,6 +41,11 @@ export default function Login() {
             {registrado && !form.formError && (
               <p role="status" className="rounded-md border border-disponible-borde bg-disponible-fondo p-3 text-sm text-tinta">
                 Cuenta creada. Ya podés ingresar.
+              </p>
+            )}
+            {restablecido && !form.formError && (
+              <p role="status" className="rounded-md border border-disponible-borde bg-disponible-fondo p-3 text-sm text-tinta">
+                Contraseña actualizada. Ingresá con la nueva.
               </p>
             )}
             {form.formError && (
@@ -107,6 +113,12 @@ export default function Login() {
               />
               Recordar sesión
             </label>
+
+            <div className="flex justify-end">
+              <Link to={ROUTES.recuperar} className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}>
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
 
             <Button type="submit" loading={form.loading} className="w-full">
               {form.loading ? 'Ingresando…' : 'Ingresar'}

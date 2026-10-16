@@ -14,6 +14,7 @@ import { useToast } from '../hooks/useToast'
 import { useUsuarios } from '../hooks/useUsuarios'
 import { mensajeError } from '../lib/errors'
 import type { Usuario } from '../types/domain'
+import { PASSWORD_POLICY_HINT, validarPoliticaContrasena } from '../utils/passwordPolicy'
 
 export default function Usuarios() {
   const toast = useToast()
@@ -54,12 +55,12 @@ export default function Usuarios() {
         <div>
           <h2 className="text-xl font-semibold text-tinta">Usuarios</h2>
           <p className="mt-1 text-sm text-secundario">
-            Cuentas de acceso. Un usuario nuevo puede ser vendedor o cliente. El catálogo de roles no se administra desde aquí.
+            Alta de empleados (vendedor). Los clientes se registran solos desde la tienda.
           </p>
         </div>
         <Button onClick={() => setCreando(true)}>
           <PlusIcon size={18} aria-hidden="true" />
-          Nuevo usuario
+          Nuevo empleado
         </Button>
       </header>
 
@@ -80,7 +81,7 @@ export default function Usuarios() {
           Verifique que la sesión tenga permiso para gestionar usuarios.
         </Alert>
       ) : usuarios.length === 0 ? (
-        <EmptyState icon={UsersIcon} title="No hay usuarios" description="Cree la primera cuenta de vendedor o cliente." />
+        <EmptyState icon={UsersIcon} title="No hay usuarios" description="Cree la primera cuenta de empleado (vendedor)." />
       ) : (
         <Table caption="Usuarios del sistema" columns={columnas} rows={usuarios} getRowKey={(usuario) => usuario.id} />
       )}
@@ -91,7 +92,7 @@ export default function Usuarios() {
           onSubmit={async (datos) => {
             try {
               await crear(datos)
-              toast.success('Usuario creado.')
+              toast.success('Empleado creado.')
               setCreando(false)
             } catch (error) {
               toast.error(mensajeError(error, 'No se pudo crear el usuario.'))
@@ -125,27 +126,25 @@ function FormularioUsuario({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (datos: { nombreUsuario: string; correo: string; contrasena: string; roles: Array<'VENDEDOR' | 'CLIENTE'> }) => Promise<void>
+  onSubmit: (datos: { nombreUsuario: string; correo: string; contrasena: string; roles: Array<'VENDEDOR'> }) => Promise<void>
 }) {
   const [nombreUsuario, setNombreUsuario] = useState('')
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
-  const [vendedor, setVendedor] = useState(true)
-  const [cliente, setCliente] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
-    const roles = [vendedor ? 'VENDEDOR' as const : null, cliente ? 'CLIENTE' as const : null].filter((rol) => rol !== null)
-    if (!roles.length) {
-      setError('Seleccione al menos un rol.')
+    const politica = validarPoliticaContrasena(contrasena)
+    if (politica) {
+      setError(politica)
       return
     }
     setOcupado(true)
     setError(null)
     try {
-      await onSubmit({ nombreUsuario, correo, contrasena, roles })
+      await onSubmit({ nombreUsuario, correo, contrasena, roles: ['VENDEDOR'] })
     } catch (err) {
       setError(mensajeError(err, 'No se pudo crear el usuario.'))
       setOcupado(false)
@@ -154,7 +153,7 @@ function FormularioUsuario({
 
   return (
     <Modal
-      title="Nuevo usuario"
+      title="Nuevo empleado"
       onClose={onClose}
       busy={ocupado}
       footer={<Button type="submit" form="form-usuario" loading={ocupado}>Crear</Button>}
@@ -164,11 +163,7 @@ function FormularioUsuario({
         <Input label="Nombre de usuario" name="nombreUsuario" required minLength={3} value={nombreUsuario} onChange={(event) => setNombreUsuario(event.target.value)} />
         <Input label="Correo" name="correo" type="email" required value={correo} onChange={(event) => setCorreo(event.target.value)} />
         <Input label="Contraseña temporal" name="contrasena" type="password" required minLength={12} value={contrasena} onChange={(event) => setContrasena(event.target.value)} />
-        <fieldset className="space-y-2 text-sm text-tinta">
-          <legend className="font-medium text-tinta">Roles</legend>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={vendedor} onChange={(event) => setVendedor(event.target.checked)} /> Vendedor</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={cliente} onChange={(event) => setCliente(event.target.checked)} /> Cliente</label>
-        </fieldset>
+        <p className="text-xs text-secundario">{PASSWORD_POLICY_HINT} Rol: Vendedor.</p>
       </form>
     </Modal>
   )
@@ -187,6 +182,11 @@ function FormularioRestablecer({
 
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
+    const politica = validarPoliticaContrasena(contrasenaTemporal)
+    if (politica) {
+      setError(politica)
+      return
+    }
     setOcupado(true)
     setError(null)
     try {
@@ -207,6 +207,7 @@ function FormularioRestablecer({
       <form id="form-restablecer" onSubmit={enviar} className="space-y-4">
         {error && <p className="text-sm text-peligro">{error}</p>}
         <Input label="Contraseña temporal" name="contrasenaTemporal" type="password" required minLength={12} value={contrasenaTemporal} onChange={(event) => setContrasenaTemporal(event.target.value)} />
+        <p className="text-xs text-secundario">{PASSWORD_POLICY_HINT}</p>
       </form>
     </Modal>
   )

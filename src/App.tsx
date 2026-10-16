@@ -3,6 +3,8 @@ import MainLayout from './layouts/MainLayout'
 import TiendaLayout from './layouts/TiendaLayout'
 import Login from './pages/Login'
 import Registro from './pages/Registro'
+import RecuperarContrasena from './pages/RecuperarContrasena'
+import RestablecerContrasena from './pages/RestablecerContrasena'
 import CatalogoPublico from './pages/CatalogoPublico'
 import DetallePublico from './pages/DetallePublico'
 import MisSolicitudes from './pages/MisSolicitudes'
@@ -29,6 +31,8 @@ export default function App() {
     <Routes>
       <Route path={ROUTES.login} element={<Login />} />
       <Route path={ROUTES.registro} element={<Registro />} />
+      <Route path={ROUTES.recuperar} element={<RecuperarContrasena />} />
+      <Route path={ROUTES.restablecer} element={<RestablecerContrasena />} />
       <Route element={<TiendaLayout />}>
         <Route path={ROUTES.catalogo} element={<CatalogoPublico />} />
         <Route path="/catalogo/:id" element={<DetallePublico />} />

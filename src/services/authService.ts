@@ -68,3 +68,21 @@ export async function cerrarSesion(): Promise<void> {
 export async function cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Promise<void> {
   await api.post('/api/auth/cambiar-contrasena', { contrasenaActual, contrasenaNueva })
 }
+
+export async function solicitarRecuperacion(correo: string): Promise<{ enviado: boolean; mensaje: string }> {
+  const { data } = await api.post('/api/auth/recuperar', { correo })
+  const parsed = z
+    .object({
+      data: z.object({
+        enviado: z.boolean(),
+        mensaje: z.string(),
+      }),
+    })
+    .safeParse(data)
+  if (!parsed.success) throw new Error('Respuesta invalida del servidor')
+  return parsed.data.data
+}
+
+export async function restablecerConToken(token: string, contrasenaNueva: string): Promise<void> {
+  await api.post('/api/auth/restablecer', { token, contrasenaNueva })
+}
