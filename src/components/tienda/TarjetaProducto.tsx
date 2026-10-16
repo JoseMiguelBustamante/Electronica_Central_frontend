@@ -1,7 +1,7 @@
 import { HeartIcon } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import Disponibilidad from './Disponibilidad'
-import FiguraProducto from './FiguraProducto'
+import ImagenProducto from './ImagenProducto'
 import type { ProductoPublico } from '../../services/catalogoService'
 import { formatPrecioMostrador } from '../../utils/formatters'
 import { FOCUS_RING, cn } from '../../utils/styles'
@@ -44,7 +44,13 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
           FOCUS_RING,
         )}
       >
-        <FiguraProducto categoria={producto.categoria} />
+        <ImagenProducto
+          codigo={producto.codigo}
+          categoria={producto.categoria}
+          nombre={producto.nombre}
+          marcoClassName={enLista ? 'h-24 w-28 shrink-0' : 'h-36 w-full'}
+          className={enLista ? 'max-h-24' : 'max-h-36'}
+        />
         <div className={cn('min-w-0', enLista ? 'flex-1' : 'mt-1')}>
           <p className="text-[11px] font-semibold tracking-wide text-secundario uppercase">
             {producto.categoria}

@@ -5,6 +5,7 @@ import Alert from '../components/Alert'
 import Button from '../components/Button'
 import LoadingState, { Skeleton } from '../components/LoadingState'
 import Disponibilidad from '../components/tienda/Disponibilidad'
+import ImagenProducto from '../components/tienda/ImagenProducto'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
 import {
@@ -121,8 +122,15 @@ export default function DetallePublico() {
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="flex min-h-72 items-start rounded-lg border border-linea bg-superficie p-6">
+        <div className="rounded-lg border border-linea bg-superficie p-6">
           <p className="text-sm font-semibold tracking-wide text-secundario uppercase">{producto.categoria}</p>
+          <ImagenProducto
+            codigo={producto.codigo}
+            categoria={producto.categoria}
+            nombre={producto.nombre}
+            marcoClassName="mt-4 min-h-64 w-full"
+            className="max-h-72"
+          />
         </div>
         <div>
           <h1 className="text-3xl font-semibold text-tinta">{producto.nombre}</h1>
