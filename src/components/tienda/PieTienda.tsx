@@ -4,14 +4,16 @@ import { FOCUS_RING } from '../../utils/styles'
 
 export default function PieTienda() {
   return (
-    <footer id="contacto" className="mt-auto scroll-mt-6 border-t border-linea bg-white">
+    <footer id="contacto" className="mt-auto scroll-mt-28 border-t border-linea bg-white">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr]">
         <div>
           <p className="text-base font-semibold text-mascara">{BRAND_NAME}</p>
           <p className="mt-2 max-w-md text-sm leading-6 text-secundario">
             Componentes electrónicos en La Paz. El precio se ve en el catálogo y la compra se cierra en el mostrador.
           </p>
-          <p className="mt-3 text-sm text-secundario">Lun–sáb 08:00–12:00 y 13:30–17:00 · La Paz</p>
+          <p className="mt-3 text-sm font-semibold text-tinta">Contacto en tienda</p>
+          <p className="mt-1 text-sm text-secundario">Lun–sáb 08:00–12:00 y 13:30–17:00 · La Paz</p>
+          <p className="mt-1 text-sm text-secundario">Consultas y retiros en el local (mostrador).</p>
         </div>
         <nav className="flex flex-col gap-2 text-sm" aria-label="Pie de página">
           <Link to={ROUTES.catalogo} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>

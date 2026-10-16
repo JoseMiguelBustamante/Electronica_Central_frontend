@@ -13,8 +13,10 @@ import {
   UserIcon,
 } from '@phosphor-icons/react'
 import { useClickOutside } from '../../hooks/useClickOutside'
-import { listarCatalogoPublico, type ProductoPublico } from '../../services/catalogoService'
 import { borrarToken, leerToken } from '../../lib/session'
+import { obtenerSesion } from '../../services/authService'
+import { listarCatalogoPublico, type ProductoPublico } from '../../services/catalogoService'
+import type { SesionUsuario } from '../../types/domain'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
 import { FOCUS_RING, cn } from '../../utils/styles'
 import { formatPrecioMostrador } from '../../utils/formatters'
@@ -36,9 +38,29 @@ export default function EncabezadoTienda() {
   const [sugerencias, setSugerencias] = useState<ProductoPublico[]>([])
   const [abierto, setAbierto] = useState(false)
   const [menuCuenta, setMenuCuenta] = useState(false)
+  const [usuario, setUsuario] = useState<SesionUsuario | null>(null)
   const conSesion = Boolean(leerToken())
   const cerrarMenu = useCallback(() => setMenuCuenta(false), [])
   useClickOutside(menuRef, menuCuenta, cerrarMenu)
+
+  useEffect(() => {
+    if (!conSesion) {
+      setUsuario(null)
+      return
+    }
+    let vigente = true
+    obtenerSesion().then(
+      (sesion) => {
+        if (vigente) setUsuario(sesion)
+      },
+      () => {
+        if (vigente) setUsuario(null)
+      },
+    )
+    return () => {
+      vigente = false
+    }
+  }, [conSesion])
 
   useEffect(() => {
     setTexto(params.get('buscar') ?? '')
@@ -101,10 +123,12 @@ export default function EncabezadoTienda() {
             menuRef={menuRef}
             abierto={menuCuenta}
             conSesion={conSesion}
+            nombre={usuario?.nombreUsuario ?? null}
             onAlternar={() => setMenuCuenta((valor) => !valor)}
             onCerrar={() => setMenuCuenta(false)}
             onSalir={() => {
               borrarToken()
+              setUsuario(null)
               setMenuCuenta(false)
               navigate(ROUTES.catalogo)
             }}
@@ -212,6 +236,7 @@ function Cuenta({
   menuRef,
   abierto,
   conSesion,
+  nombre,
   onAlternar,
   onCerrar,
   onSalir,
@@ -219,10 +244,13 @@ function Cuenta({
   menuRef: RefObject<HTMLDivElement | null>
   abierto: boolean
   conSesion: boolean
+  nombre: string | null
   onAlternar: () => void
   onCerrar: () => void
   onSalir: () => void
 }) {
+  const etiqueta = conSesion ? (nombre ?? 'Cuenta') : 'Ingresar'
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -230,16 +258,21 @@ function Cuenta({
         aria-expanded={abierto}
         aria-haspopup="menu"
         onClick={onAlternar}
-        className={`inline-flex items-center gap-1.5 text-sm font-semibold text-tinta ${FOCUS_RING}`}
+        className={`inline-flex max-w-40 items-center gap-1.5 text-sm font-semibold text-tinta ${FOCUS_RING}`}
       >
-        <UserIcon size={18} aria-hidden="true" />
-        {conSesion ? 'Cuenta' : 'Ingresar'}
-        <CaretDownIcon size={12} aria-hidden="true" />
+        <UserIcon size={18} className="shrink-0" aria-hidden="true" />
+        <span className="truncate">{etiqueta}</span>
+        <CaretDownIcon size={12} className="shrink-0" aria-hidden="true" />
       </button>
       {abierto && (
-        <div role="menu" className="absolute top-9 right-0 z-30 w-44 rounded-lg border border-linea bg-white py-1 shadow-sm">
+        <div role="menu" className="absolute top-9 right-0 z-30 w-48 rounded-lg border border-linea bg-white py-1 shadow-sm">
           {conSesion ? (
             <>
+              {nombre && (
+                <p className="border-b border-linea px-3 py-2 text-xs text-secundario">
+                  Sesión: <span className="font-semibold text-tinta">{nombre}</span>
+                </p>
+              )}
               <Link role="menuitem" to={ROUTES.misSolicitudes} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
                 Mis solicitudes
               </Link>

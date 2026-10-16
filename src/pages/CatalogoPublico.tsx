@@ -293,12 +293,13 @@ function SelectorFiltro({
   opciones: Array<{ id: string; nombre: string }>
 }) {
   return (
-    <label id={id} className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1">
+    <label htmlFor={id} className="flex min-w-0 scroll-mt-28 items-center gap-2 rounded-lg px-2 py-1">
       <Icono size={18} className="shrink-0 text-secundario" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] text-secundario">{etiqueta}</span>
         <span className="relative block">
           <select
+            id={id}
             aria-label={etiqueta}
             value={value}
             onChange={(event) => onChange(event.target.value)}
