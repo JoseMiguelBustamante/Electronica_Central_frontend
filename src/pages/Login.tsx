@@ -1,13 +1,16 @@
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EyeIcon, EyeSlashIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import Button from '../components/Button'
 import Input from '../components/Input'
 import { useLoginForm } from '../hooks/useLoginForm'
-import { BRAND_NAME } from '../utils/navigation'
+import { BRAND_NAME, ROUTES } from '../utils/navigation'
 import { FOCUS_RING, cn } from '../utils/styles'
 
 export default function Login() {
   const form = useLoginForm()
+  const [searchParams] = useSearchParams()
+  const registrado = searchParams.get('registrado') === '1'
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -34,6 +37,11 @@ export default function Login() {
         >
 
           <form onSubmit={form.handleSubmit} noValidate aria-busy={form.loading} className="space-y-5">
+            {registrado && !form.formError && (
+              <p role="status" className="rounded-md border border-disponible-borde bg-disponible-fondo p-3 text-sm text-tinta">
+                Cuenta creada. Ya podés ingresar.
+              </p>
+            )}
             {form.formError && (
               <div
                 role="alert"
@@ -104,6 +112,13 @@ export default function Login() {
               {form.loading ? 'Ingresando…' : 'Ingresar'}
             </Button>
           </form>
+
+          <p className="mt-5 text-center text-sm text-secundario">
+            ¿No tenés cuenta?{' '}
+            <Link to={ROUTES.registro} className={`font-semibold text-mascara ${FOCUS_RING}`}>
+              Crear cuenta
+            </Link>
+          </p>
         </section>
       </div>
     </main>

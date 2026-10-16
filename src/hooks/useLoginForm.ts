@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mensajeError } from '../lib/errors'
 import { iniciarSesion } from '../services/authService'
-import { ROUTES } from '../utils/navigation'
+import { ROUTES, esPersonal } from '../utils/navigation'
 
 export const REQUIRED_FIELDS_MESSAGE = 'Complete los campos requeridos'
 
@@ -60,12 +60,13 @@ export function useLoginForm() {
     setFormError(null)
     setLoading(true)
     try {
-      await iniciarSesion(identificador.trim(), contrasena, recordar)
+      const usuario = await iniciarSesion(identificador.trim(), contrasena, recordar)
       const volver = searchParams.get('volver')
-      const destino =
+      const destinoStaff =
         volver && volver.startsWith('/catalogo/') && !volver.startsWith('//')
           ? volver
           : ROUTES.dashboard
+      const destino = esPersonal(usuario.roles) ? destinoStaff : ROUTES.misSolicitudes
       navigate(destino, { replace: true })
     } catch (error) {
       setFormError(mensajeError(error, 'No se pudo iniciar sesión. Intente nuevamente.'))

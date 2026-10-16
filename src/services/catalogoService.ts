@@ -266,6 +266,10 @@ export async function listarMarcas(): Promise<Marca[]> {
   }))
 }
 
+export async function crearMarca(nombre: string): Promise<void> {
+  await api.post('/api/marcas', { nombre })
+}
+
 export async function listarModelos(): Promise<Modelo[]> {
   const { data } = await api.get('/api/modelos')
   return leer(z.object({ data: z.array(modeloSchema) }), data).data.map((row) => ({
@@ -273,6 +277,33 @@ export async function listarModelos(): Promise<Modelo[]> {
     nombre: row.nombre,
     idMarca: row.id_marca,
   }))
+}
+
+export async function crearModelo(datos: {
+  nombre: string
+  descripcion?: string
+  idMarca: string
+}): Promise<void> {
+  await api.post('/api/modelos', {
+    nombre: datos.nombre,
+    descripcion: datos.descripcion || undefined,
+    idMarca: datos.idMarca,
+  })
+}
+
+export async function agregarCompatibilidad(
+  idProducto: string,
+  idModelo: string,
+  observaciones?: string,
+): Promise<void> {
+  await api.post(`/api/productos/${idProducto}/compatibilidades`, {
+    idModelo,
+    observaciones: observaciones || undefined,
+  })
+}
+
+export async function quitarCompatibilidad(idProducto: string, idModelo: string): Promise<void> {
+  await api.delete(`/api/productos/${idProducto}/compatibilidades/${idModelo}`)
 }
 
 export async function crearProducto(datos: DatosProducto): Promise<void> {

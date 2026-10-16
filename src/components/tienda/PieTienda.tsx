@@ -5,7 +5,7 @@ import { FOCUS_RING } from '../../utils/styles'
 export default function PieTienda() {
   return (
     <footer className="mt-auto border-t border-linea bg-superficie">
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-[1.4fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr]">
         <div>
           <p className="text-base font-semibold text-mascara">{BRAND_NAME}</p>
           <p className="mt-2 max-w-md text-sm leading-6 text-secundario">
@@ -17,8 +17,14 @@ export default function PieTienda() {
           <Link to={ROUTES.catalogo} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
             Catálogo
           </Link>
+          <Link to={ROUTES.registro} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+            Crear cuenta
+          </Link>
           <Link to={ROUTES.login} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
             Ingresar
+          </Link>
+          <Link to={ROUTES.misSolicitudes} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+            Mis solicitudes
           </Link>
         </nav>
       </div>

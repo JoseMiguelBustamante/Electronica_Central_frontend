@@ -102,13 +102,13 @@ export default function CatalogoPublico() {
         Precios de mostrador en bolivianos. La solicitud no aparta unidades.
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="text-sm text-secundario">
           Categoría
           <select
             value={idCategoria}
             onChange={(event) => fijarParametro('categoria', event.target.value)}
-            className={`mt-1 block h-11 min-w-48 rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
+            className={`mt-1 block h-11 w-full rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
           >
             <option value="">Todas</option>
             {filtros.categorias.map((categoria) => (
@@ -123,7 +123,7 @@ export default function CatalogoPublico() {
           <select
             value={idMarca}
             onChange={(event) => fijarParametro('marca', event.target.value)}
-            className={`mt-1 block h-11 min-w-48 rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
+            className={`mt-1 block h-11 w-full rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
           >
             <option value="">Todas</option>
             {filtros.marcas.map((marca) => (
@@ -133,12 +133,12 @@ export default function CatalogoPublico() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-secundario">
+        <label className="text-sm text-secundario sm:col-span-2 lg:col-span-1">
           Modelo
           <select
             value={idModelo}
             onChange={(event) => fijarParametro('modelo', event.target.value)}
-            className={`mt-1 block h-11 min-w-48 rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
+            className={`mt-1 block h-11 w-full rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
           >
             <option value="">Todos</option>
             {filtros.modelos.map((modelo) => (

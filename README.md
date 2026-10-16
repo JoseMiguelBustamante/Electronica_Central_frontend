@@ -6,19 +6,31 @@ Frontend del sistema administrativo para **Electrónica Central AZ**, desarrolla
 
 Aplicación web frontend para la gestión administrativa de una tienda de productos electrónicos.
 
-El proyecto implementa las funcionalidades correspondientes al **Ciclo 1**, utilizando datos mock en memoria para simular el funcionamiento del sistema mientras el backend se desarrolla por separado.
+El frontend cubre el **Ciclo 1** (UI admin + catálogo público) y consume la API real del backend (ya no usa mocks).
+
+El **Ciclo 2** del perfil (inventario, proveedores, compras, compatibilidad) está implementado en el **backend**; las pantallas de UI correspondientes todavía faltan. Estado verificado: `Electronica_Central_Backend/docs/ciclo-2-verificacion.md` (perfil: `docs/PerfilGrupo14_2doCiclo.docx`).
 
 ## Funcionalidades
 
-Actualmente están implementados:
+### Ciclo 1
 
-* Inicio de sesión
-* Panel principal
-* Gestión de usuarios y roles
-* Bitácora
-* Gestión de productos
-* Gestión de categorías
-* Gestión de unidades de medida
+* Inicio de sesión, panel, usuarios, bitácora
+* Productos, categorías, unidades, marcas, modelos
+* Catálogo público (responsive)
+
+### Ciclo 2
+
+* Inventario (listado, ajuste, stock mínimo)
+* Proveedores y compras (alta, recibir, cancelar)
+* Compatibilidades producto ↔ modelo
+
+### Ciclo 3
+
+* Clientes, ventas (confirmar/anular), pagos (efectivo/QR), solicitudes
+
+### Ciclo 4
+
+* Reportes: ventas, ganancias, inventario, rotación/demanda
 
 ### Gestión de productos
 

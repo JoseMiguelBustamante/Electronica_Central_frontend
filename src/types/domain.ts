@@ -99,3 +99,73 @@ export interface DatosUnidad {
   simbolo: string
   permiteFraccion: boolean
 }
+
+export interface ItemInventario {
+  idProducto: string
+  codigo: string
+  nombre: string
+  stockActual: number
+  stockMinimo: number
+  ubicacionCodigo: string
+  alerta: string
+  costoPromedio: number
+}
+
+export interface MovimientoInventario {
+  id: string
+  fechaHora: string
+  tipo: string
+  cantidad: number
+  motivo: string
+}
+
+export interface Proveedor {
+  id: string
+  razonSocial: string
+  documento: string
+  telefono: string
+  correo: string
+  direccion: string
+  activo: boolean
+}
+
+export interface Compra {
+  id: string
+  fecha: string
+  estado: string
+  idProveedor: string
+  proveedorNombre: string
+}
+
+export interface Cliente {
+  id: string
+  nombre: string
+  documento: string
+  telefono: string
+  correo: string
+}
+
+export interface Venta {
+  id: string
+  fechaHora: string
+  estado: string
+  idCliente: string
+  clienteNombre: string
+}
+
+export interface SolicitudProducto {
+  id: string
+  fechaHora: string
+  descripcionProducto: string
+  cantidad: number
+  estado: string
+  clienteNombre: string
+}
+
+export interface PagoVenta {
+  id: string
+  fechaHora: string
+  monto: number
+  metodo: string
+  estado: string
+}

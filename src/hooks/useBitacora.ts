@@ -3,7 +3,7 @@ import { listarRegistrosBitacora } from '../services/bitacoraService'
 import type { RegistroBitacora } from '../types/domain'
 import type { EstadoCarga } from './estadoCarga'
 
-/** Registros de la bitacora (solo lectura). Hoy usa un servicio simulado en memoria. */
+/** Registros de la bitácora (solo lectura) desde la API/DB. */
 export function useBitacora() {
   const [registros, setRegistros] = useState<RegistroBitacora[]>([])
   const [estado, setEstado] = useState<EstadoCarga>('cargando')

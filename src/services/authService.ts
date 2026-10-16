@@ -36,6 +36,22 @@ export async function iniciarSesion(identificador: string, contrasena: string, r
   return sesion.data.usuario
 }
 
+export async function registrarCuentaCliente(datos: {
+  nombreUsuario: string
+  correo: string
+  contrasena: string
+  nombre: string
+  telefono?: string
+}): Promise<void> {
+  await api.post('/api/auth/registro', {
+    nombreUsuario: datos.nombreUsuario,
+    correo: datos.correo,
+    contrasena: datos.contrasena,
+    nombre: datos.nombre,
+    telefono: datos.telefono || undefined,
+  })
+}
+
 export async function obtenerSesion(): Promise<SesionUsuario> {
   const { data } = await api.get('/api/auth/me')
   return leer(meSchema, data).data

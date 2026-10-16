@@ -9,7 +9,7 @@ import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
 import { cambiarContrasena, cerrarSesion, obtenerSesion } from '../services/authService'
 import type { SesionUsuario } from '../types/domain'
-import { NAV_ITEMS, ROUTES } from '../utils/navigation'
+import { NAV_ITEMS, ROUTES, esPersonal } from '../utils/navigation'
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -65,6 +65,10 @@ export default function MainLayout() {
   }
 
   if (!token) return <Navigate to={ROUTES.login} replace />
+
+  if (estado === 'listo' && usuario && !esPersonal(usuario.roles)) {
+    return <Navigate to={ROUTES.misSolicitudes} replace />
+  }
 
   const title = NAV_ITEMS.find((item) => pathname.startsWith(item.to))?.label ?? ''
   const user = {
