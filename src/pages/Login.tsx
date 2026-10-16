@@ -19,7 +19,7 @@ export default function Login() {
     <main className="relative flex min-h-dvh items-center overflow-hidden bg-fondo px-6 py-16 sm:px-10 lg:px-20">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-30"
+        className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-[0.45]"
         style={{ backgroundImage: `url(${fachadaFondo})` }}
       />
       <div className="relative z-10 mx-auto grid w-full max-w-5xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_28rem]">
