@@ -4,7 +4,7 @@ import { FOCUS_RING } from '../../utils/styles'
 
 export default function PieTienda() {
   return (
-    <footer className="mt-auto border-t border-linea bg-superficie">
+    <footer id="contacto" className="mt-auto scroll-mt-6 border-t border-linea bg-white">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[1.4fr_1fr]">
         <div>
           <p className="text-base font-semibold text-mascara">{BRAND_NAME}</p>

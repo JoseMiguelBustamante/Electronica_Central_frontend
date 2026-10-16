@@ -1,22 +1,44 @@
-import { useEffect, useId, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { RefObject } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  CaretDownIcon,
+  ClockIcon,
+  CubeIcon,
+  EnvelopeSimpleIcon,
+  MagnifyingGlassIcon,
+  ShoppingCartIcon,
+  SquaresFourIcon,
+  TagIcon,
+  UserIcon,
+} from '@phosphor-icons/react'
+import { useClickOutside } from '../../hooks/useClickOutside'
 import { listarCatalogoPublico, type ProductoPublico } from '../../services/catalogoService'
 import { borrarToken, leerToken } from '../../lib/session'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
-import { FOCUS_RING } from '../../utils/styles'
-import { formatCurrency } from '../../utils/formatters'
+import { FOCUS_RING, cn } from '../../utils/styles'
+import { formatPrecioMostrador } from '../../utils/formatters'
 
-const HORARIO = 'Lun–sáb 08:00–12:00 y 13:30–17:00'
+const ENLACES = [
+  { etiqueta: 'Catálogo', to: ROUTES.catalogo, icono: SquaresFourIcon },
+  { etiqueta: 'Categorías', to: `${ROUTES.catalogo}#categoria`, icono: TagIcon },
+  { etiqueta: 'Marcas', to: `${ROUTES.catalogo}#marca`, icono: CubeIcon },
+  { etiqueta: 'Contacto', to: `${ROUTES.catalogo}#contacto`, icono: EnvelopeSimpleIcon },
+] as const
 
 export default function EncabezadoTienda() {
   const navigate = useNavigate()
+  const ubicacion = useLocation()
   const [params] = useSearchParams()
   const busquedaId = useId()
+  const menuRef = useRef<HTMLDivElement>(null)
   const [texto, setTexto] = useState(params.get('buscar') ?? '')
   const [sugerencias, setSugerencias] = useState<ProductoPublico[]>([])
   const [abierto, setAbierto] = useState(false)
+  const [menuCuenta, setMenuCuenta] = useState(false)
   const conSesion = Boolean(leerToken())
+  const cerrarMenu = useCallback(() => setMenuCuenta(false), [])
+  useClickOutside(menuRef, menuCuenta, cerrarMenu)
 
   useEffect(() => {
     setTexto(params.get('buscar') ?? '')
@@ -41,56 +63,58 @@ export default function EncabezadoTienda() {
     const siguientes = new URLSearchParams(params)
     if (consulta) siguientes.set('buscar', consulta)
     else siguientes.delete('buscar')
+    siguientes.delete('pagina')
     setAbierto(false)
     navigate({ pathname: ROUTES.catalogo, search: siguientes.toString() })
   }
 
-  const enlaceSesion = conSesion ? (
-    <div className="flex shrink-0 items-center gap-3">
-      <Link to={ROUTES.misSolicitudes} className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}>
-        Mis solicitudes
-      </Link>
-      <Link to={ROUTES.dashboard} className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}>
-        Panel
-      </Link>
-      <button
-        type="button"
-        className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}
-        onClick={() => {
-          borrarToken()
-          navigate(ROUTES.catalogo)
-        }}
-      >
-        Salir
-      </button>
-    </div>
-  ) : (
-    <div className="flex shrink-0 items-center gap-3">
-      <Link to={ROUTES.registro} className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}>
-        Crear cuenta
-      </Link>
-      <Link to={ROUTES.login} className={`text-sm font-semibold text-mascara ${FOCUS_RING}`}>
-        Ingresar
-      </Link>
-    </div>
-  )
+  const activo = (to: string) => {
+    if (to === ROUTES.catalogo) return ubicacion.pathname === ROUTES.catalogo && !ubicacion.hash
+    return ubicacion.hash === to.slice(to.indexOf('#'))
+  }
 
   return (
-    <header className="border-b border-linea bg-superficie">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 md:flex-row md:items-center md:gap-6">
-        <div className="flex min-w-0 items-center justify-between gap-3 md:contents">
-          <Link
-            to={ROUTES.catalogo}
-            className={`min-w-0 truncate text-base font-semibold text-mascara sm:text-lg ${FOCUS_RING} md:shrink-0`}
-          >
-            {BRAND_NAME}
-          </Link>
-          <div className="md:hidden">{enlaceSesion}</div>
+    <header className="border-b border-linea bg-white">
+      <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
+        <Link to={ROUTES.catalogo} className={`flex min-w-0 items-center gap-2.5 ${FOCUS_RING}`}>
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-mascara text-white">
+            <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <rect x="7" y="7" width="10" height="10" rx="1.5" />
+              <path d="M9 7V4.5M12 7V4.5M15 7V4.5M9 19.5V17M12 19.5V17M15 19.5V17M7 9H4.5M7 12H4.5M7 15H4.5M19.5 9H17M19.5 12H17M19.5 15H17" />
+            </svg>
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-mascara">{BRAND_NAME}</span>
+            <span className="block truncate text-xs text-secundario">Componentes hoy, grandes proyectos mañana</span>
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-3 lg:col-start-3">
+          <p className="hidden items-start gap-2 text-xs leading-4 text-secundario lg:flex">
+            <ClockIcon size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              Lun - Sáb
+              <span className="block">08:00-12:00 y 13:30-17:00</span>
+            </span>
+          </p>
+          <Cuenta
+            menuRef={menuRef}
+            abierto={menuCuenta}
+            conSesion={conSesion}
+            onAlternar={() => setMenuCuenta((valor) => !valor)}
+            onCerrar={() => setMenuCuenta(false)}
+            onSalir={() => {
+              borrarToken()
+              setMenuCuenta(false)
+              navigate(ROUTES.catalogo)
+            }}
+          />
+          <Carrito />
         </div>
 
         <form
           role="search"
-          className="relative min-w-0 w-full md:flex-1"
+          className="relative col-span-2 min-w-0 lg:col-span-1 lg:col-start-2 lg:row-start-1"
           onSubmit={(event) => {
             event.preventDefault()
             buscar(texto)
@@ -108,21 +132,20 @@ export default function EncabezadoTienda() {
                 setAbierto(true)
               }}
               onFocus={() => setAbierto(true)}
-              placeholder="Buscar por nombre o código"
+              placeholder="Buscar por nombre, código o modelo..."
               autoComplete="off"
-              className={`h-11 min-w-0 flex-1 rounded-md border border-campo bg-superficie px-3 text-sm text-tinta ${FOCUS_RING}`}
+              className={`h-11 min-w-0 flex-1 rounded-lg border border-linea bg-white px-3 text-sm text-tinta ${FOCUS_RING}`}
             />
             <button
               type="submit"
-              aria-label="Buscar"
-              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-md bg-cobre px-3 text-sm font-semibold text-white hover:bg-cobre-press sm:px-4 ${FOCUS_RING}`}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-cobre px-4 text-sm font-semibold text-white hover:bg-cobre-press ${FOCUS_RING}`}
             >
               <MagnifyingGlassIcon size={16} aria-hidden="true" />
-              <span className="hidden sm:inline">Buscar</span>
+              Buscar
             </button>
           </div>
           {abierto && texto.trim().length >= 2 && (
-            <div className="absolute top-12 right-0 left-0 z-20 rounded-md border border-linea bg-superficie shadow-sm">
+            <div className="absolute top-12 right-0 left-0 z-20 rounded-lg border border-linea bg-white shadow-sm">
               {sugerencias.length === 0 ? (
                 <p className="px-3 py-3 text-sm text-secundario">Sin coincidencias en el catálogo.</p>
               ) : (
@@ -138,7 +161,7 @@ export default function EncabezadoTienda() {
                           <span className="font-semibold text-tinta">{producto.nombre}</span>
                           <span className="ml-2 font-mono text-xs text-secundario">{producto.codigo}</span>
                         </span>
-                        <span className="shrink-0 font-mono text-cobre">{formatCurrency(producto.precio)}</span>
+                        <span className="shrink-0 text-cobre">{formatPrecioMostrador(producto.precio)}</span>
                       </Link>
                     </li>
                   ))}
@@ -147,18 +170,98 @@ export default function EncabezadoTienda() {
             </div>
           )}
         </form>
-
-        <p className="hidden max-w-48 text-right text-xs leading-5 text-secundario xl:block">{HORARIO}</p>
-        <div className="hidden md:block">{enlaceSesion}</div>
       </div>
-      <nav className="mx-auto flex max-w-7xl gap-6 px-4 pb-3 text-sm sm:px-6" aria-label="Tienda">
-        <Link to={ROUTES.catalogo} className={`font-semibold text-mascara ${FOCUS_RING}`}>
-          Catálogo
-        </Link>
-        <Link to={ROUTES.misSolicitudes} className={`font-semibold text-mascara ${FOCUS_RING}`}>
-          Mis solicitudes
-        </Link>
+
+      <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tienda">
+        {ENLACES.map((enlace) => {
+          const Icono = enlace.icono
+          const esActivo = activo(enlace.to)
+          return (
+            <Link
+              key={enlace.etiqueta}
+              to={enlace.to}
+              aria-current={esActivo ? 'page' : undefined}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
+                esActivo ? 'border-mascara text-mascara' : 'border-transparent text-secundario hover:text-tinta',
+                FOCUS_RING,
+              )}
+            >
+              <Icono size={16} aria-hidden="true" />
+              {enlace.etiqueta}
+            </Link>
+          )
+        })}
       </nav>
     </header>
+  )
+}
+
+function Carrito() {
+  return (
+    <span className="relative grid size-10 place-items-center text-tinta" aria-label="Carrito, 0 productos">
+      <ShoppingCartIcon size={22} aria-hidden="true" />
+      <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white">
+        0
+      </span>
+    </span>
+  )
+}
+
+function Cuenta({
+  menuRef,
+  abierto,
+  conSesion,
+  onAlternar,
+  onCerrar,
+  onSalir,
+}: {
+  menuRef: RefObject<HTMLDivElement | null>
+  abierto: boolean
+  conSesion: boolean
+  onAlternar: () => void
+  onCerrar: () => void
+  onSalir: () => void
+}) {
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        aria-expanded={abierto}
+        aria-haspopup="menu"
+        onClick={onAlternar}
+        className={`inline-flex items-center gap-1.5 text-sm font-semibold text-tinta ${FOCUS_RING}`}
+      >
+        <UserIcon size={18} aria-hidden="true" />
+        {conSesion ? 'Cuenta' : 'Ingresar'}
+        <CaretDownIcon size={12} aria-hidden="true" />
+      </button>
+      {abierto && (
+        <div role="menu" className="absolute top-9 right-0 z-30 w-44 rounded-lg border border-linea bg-white py-1 shadow-sm">
+          {conSesion ? (
+            <>
+              <Link role="menuitem" to={ROUTES.misSolicitudes} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Mis solicitudes
+              </Link>
+              <Link role="menuitem" to={ROUTES.dashboard} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Panel
+              </Link>
+              <button role="menuitem" type="button" onClick={onSalir} className={`block w-full px-3 py-2 text-left text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Salir
+              </button>
+            </>
+          ) : (
+            <>
+              <Link role="menuitem" to={ROUTES.login} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Ingresar
+              </Link>
+              <Link role="menuitem" to={ROUTES.registro} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Crear cuenta
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

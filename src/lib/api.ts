@@ -2,7 +2,7 @@ import axios, { isAxiosError } from 'axios'
 import { borrarToken, leerToken } from './session'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : 'http://localhost:3000'),
 })
 
 api.interceptors.request.use((config) => {

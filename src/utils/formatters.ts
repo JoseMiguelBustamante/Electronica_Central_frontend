@@ -38,8 +38,17 @@ export function toDateKey(iso: string): string {
 }
 
 const currencyFormat = new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' })
+const precioMostrador = new Intl.NumberFormat('es-BO', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
 
 /** Formatea un monto en bolivianos (Bs). */
 export function formatCurrency(value: number): string {
   return currencyFormat.format(value)
+}
+
+/** Precio de mostrador tal como se lee en el catálogo: `Bs 15,00`. */
+export function formatPrecioMostrador(value: number): string {
+  return `Bs ${precioMostrador.format(value)}`
 }
