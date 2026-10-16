@@ -11,6 +11,10 @@ export function mensajeError(error: unknown, respaldo: string): string {
         if (typeof restantes === 'number' && restantes >= 0) {
           return `${message} Intentos restantes: ${restantes}.`
         }
+        const minutos = (details as { minutosBloqueo?: number }).minutosBloqueo
+        if (typeof minutos === 'number' && minutos > 0 && !message.includes('Espere')) {
+          return `${message} Espere ${minutos} minuto(s).`
+        }
       }
       return message
     }
