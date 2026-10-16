@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { NotePencilIcon, PlusIcon } from '@phosphor-icons/react'
 import Alert from '../components/Alert'
 import Badge from '../components/Badge'
@@ -22,6 +22,8 @@ import { ROUTES } from '../utils/navigation'
 
 export default function MisSolicitudes() {
   const toast = useToast()
+  const [searchParams] = useSearchParams()
+  const pedidoConfirmado = searchParams.get('pedido') === '1'
   const conSesion = Boolean(leerToken())
   const [items, setItems] = useState<SolicitudProducto[]>([])
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
@@ -89,11 +91,16 @@ export default function MisSolicitudes() {
 
   return (
     <div className="space-y-6">
+      {pedidoConfirmado && (
+        <Alert variant="success" title="Pedido registrado">
+          Tus ítems del carrito quedaron como solicitudes. El pago online todavía no está disponible: coordiná el cobro en tienda.
+        </Alert>
+      )}
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-tinta">Mis solicitudes</h1>
           <p className="mt-1 text-sm text-secundario">
-            Pedí productos que no encontraste o que querés consultar.
+            Pedí productos que no encontraste o que querés consultar. También llegan acá los pedidos confirmados desde el carrito.
           </p>
         </div>
         <Button onClick={() => setCreando(true)}>

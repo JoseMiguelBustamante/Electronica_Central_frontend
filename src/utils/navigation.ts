@@ -26,6 +26,7 @@ export const ROUTES = {
   recuperar: '/recuperar',
   restablecer: '/restablecer',
   catalogo: '/',
+  carrito: '/carrito',
   misSolicitudes: '/mis-solicitudes',
   dashboard: '/dashboard',
   usuarios: '/usuarios',

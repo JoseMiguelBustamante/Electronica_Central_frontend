@@ -6,10 +6,10 @@ import Button from '../components/Button'
 import LoadingState, { Skeleton } from '../components/LoadingState'
 import Disponibilidad from '../components/tienda/Disponibilidad'
 import ImagenProducto from '../components/tienda/ImagenProducto'
+import { useCart } from '../hooks/useCart'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
 import {
-  crearSolicitudProducto,
   listarCatalogoPublico,
   obtenerProductoPublico,
   type ProductoPublico,
@@ -27,10 +27,9 @@ export default function DetallePublico() {
   const [error, setError] = useState<string | null>(null)
   const [intento, setIntento] = useState(0)
   const [cantidad, setCantidad] = useState('1')
-  const [observaciones, setObservaciones] = useState('')
-  const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const [avisoError, setAvisoError] = useState<string | null>(null)
+  const { addItem } = useCart()
   const conSesion = Boolean(leerToken())
 
   useEffect(() => {
@@ -60,26 +59,24 @@ export default function DetallePublico() {
     }
   }, [id, intento])
 
-  const solicitar = async (event: FormEvent<HTMLFormElement>) => {
+  const agregarAlCarrito = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!producto || enviando) return
+    if (!producto) return
     const unidades = Number(cantidad)
     if (!Number.isFinite(unidades) || unidades <= 0) {
       setAvisoError('Indique una cantidad mayor que cero.')
       return
     }
-    setEnviando(true)
-    setAviso(null)
     setAvisoError(null)
-    try {
-      await crearSolicitudProducto(producto, unidades, observaciones)
-      setAviso('Solicitud registrada. No aparta unidades ni confirma una venta.')
-      setObservaciones('')
-    } catch (causa) {
-      setAvisoError(mensajeError(causa, 'No se pudo registrar la solicitud.'))
-    } finally {
-      setEnviando(false)
-    }
+    addItem({
+      id: producto.id,
+      codigo: producto.codigo,
+      nombre: producto.nombre,
+      precio: producto.precio,
+      disponibilidad: producto.disponibilidad,
+      cantidad: unidades,
+    })
+    setAviso('Agregado al carrito. El pago online todavía no está disponible: confirmás el pedido y cobrás en tienda.')
   }
 
   if (cargando) {
@@ -171,47 +168,38 @@ export default function DetallePublico() {
               </Alert>
             )}
             {avisoError && (
-              <Alert variant="error" title="No se registró">
+              <Alert variant="error" title="No se agregó">
                 {avisoError}
               </Alert>
             )}
-            {conSesion ? (
-              <form className="mt-3 space-y-3" onSubmit={solicitar}>
-                <label className="block text-[13px] font-semibold text-tinta">
-                  Cantidad
-                  <input
-                    value={cantidad}
-                    onChange={(event) => setCantidad(event.target.value)}
-                    inputMode="decimal"
-                    className={`mt-1 h-11 w-32 rounded-md border border-campo bg-superficie px-3 font-mono text-sm ${FOCUS_RING}`}
-                  />
-                </label>
-                <label className="block text-[13px] font-semibold text-tinta">
-                  Observaciones
-                  <textarea
-                    value={observaciones}
-                    onChange={(event) => setObservaciones(event.target.value)}
-                    rows={3}
-                    className={`mt-1 w-full rounded-md border border-campo bg-superficie px-3 py-2 text-sm ${FOCUS_RING}`}
-                  />
-                </label>
-                <Button type="submit" loading={enviando}>
-                  Solicitar
+            <form className="mt-3 space-y-3" onSubmit={agregarAlCarrito}>
+              <label className="block text-[13px] font-semibold text-tinta">
+                Cantidad
+                <input
+                  value={cantidad}
+                  onChange={(event) => setCantidad(event.target.value)}
+                  inputMode="decimal"
+                  className={`mt-1 h-11 w-32 rounded-md border border-campo bg-superficie px-3 font-mono text-sm ${FOCUS_RING}`}
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit">Agregar al carrito</Button>
+                <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.carrito)}>
+                  Ver carrito
                 </Button>
-                <p className="text-xs text-secundario">La solicitud no reserva stock ni crea una venta.</p>
-              </form>
-            ) : (
-              <div>
-                <Button
-                  onClick={() => navigate(`${ROUTES.login}?volver=${encodeURIComponent(volver)}`)}
-                >
-                  Ingresar para solicitar
-                </Button>
-                <p className="mt-2 text-xs text-secundario">
-                  Puede ver el precio sin cuenta. Para dejar la solicitud necesita ingresar.
-                </p>
               </div>
-            )}
+              <p className="text-xs text-secundario">
+                Podés armar el carrito sin cuenta. Para confirmar el pedido hace falta ingresar; el pago online viene después.
+                {!conSesion && (
+                  <>
+                    {' '}
+                    <Link to={`${ROUTES.login}?volver=${encodeURIComponent(volver)}`} className={`font-semibold text-mascara ${FOCUS_RING}`}>
+                      Ingresar
+                    </Link>
+                  </>
+                )}
+              </p>
+            </form>
           </div>
         </div>
       </div>

@@ -62,12 +62,17 @@ export function useLoginForm() {
     try {
       const usuario = await iniciarSesion(identificador.trim(), contrasena, recordar)
       const volver = searchParams.get('volver')
-      const destinoStaff =
-        volver && volver.startsWith('/catalogo/') && !volver.startsWith('//')
+      const volverSeguro =
+        volver
+        && volver.startsWith('/')
+        && !volver.startsWith('//')
+        && !volver.startsWith('/login')
+        && !volver.startsWith('/registro')
           ? volver
-          : ROUTES.dashboard
-      const destino = esPersonal(usuario.roles) ? destinoStaff : ROUTES.misSolicitudes
-      navigate(destino, { replace: true })
+          : null
+      const destinoStaff = volverSeguro?.startsWith('/catalogo/') ? volverSeguro : ROUTES.dashboard
+      const destinoCliente = volverSeguro || ROUTES.misSolicitudes
+      navigate(esPersonal(usuario.roles) ? destinoStaff : destinoCliente, { replace: true })
     } catch (error) {
       setFormError(mensajeError(error, 'No se pudo iniciar sesión. Intente nuevamente.'))
       setLoading(false)

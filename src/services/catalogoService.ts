@@ -231,7 +231,7 @@ export async function listarFiltrosPublicos(): Promise<FiltrosCatalogo> {
 }
 
 export async function crearSolicitudProducto(
-  producto: ProductoPublico,
+  producto: Pick<ProductoPublico, 'id' | 'nombre'>,
   cantidad: number,
   observaciones: string,
 ): Promise<void> {

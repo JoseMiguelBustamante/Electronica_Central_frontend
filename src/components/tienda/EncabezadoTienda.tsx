@@ -17,6 +17,7 @@ import { borrarToken, leerToken } from '../../lib/session'
 import { obtenerSesion } from '../../services/authService'
 import { listarCatalogoPublico, type ProductoPublico } from '../../services/catalogoService'
 import type { SesionUsuario } from '../../types/domain'
+import { useCart } from '../../hooks/useCart'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
 import { FOCUS_RING, cn } from '../../utils/styles'
 import { formatPrecioMostrador } from '../../utils/formatters'
@@ -222,13 +223,20 @@ export default function EncabezadoTienda() {
 }
 
 function Carrito() {
+  const { lineCount } = useCart()
+  const etiqueta = lineCount === 1 ? '1 producto' : `${lineCount} productos`
+
   return (
-    <span className="relative grid size-10 place-items-center text-tinta" aria-label="Carrito, 0 productos">
+    <Link
+      to={ROUTES.carrito}
+      className={`relative grid size-10 place-items-center text-tinta hover:text-mascara ${FOCUS_RING}`}
+      aria-label={`Carrito, ${etiqueta}`}
+    >
       <ShoppingCartIcon size={22} aria-hidden="true" />
       <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white">
-        0
+        {lineCount > 99 ? '99+' : lineCount}
       </span>
-    </span>
+    </Link>
   )
 }
 

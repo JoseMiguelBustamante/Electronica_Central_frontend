@@ -8,6 +8,7 @@ import RestablecerContrasena from './pages/RestablecerContrasena'
 import CatalogoPublico from './pages/CatalogoPublico'
 import DetallePublico from './pages/DetallePublico'
 import MisSolicitudes from './pages/MisSolicitudes'
+import Carrito from './pages/Carrito'
 import Dashboard from './pages/Dashboard'
 import Usuarios from './pages/Usuarios'
 import Bitacora from './pages/Bitacora'
@@ -36,6 +37,7 @@ export default function App() {
       <Route element={<TiendaLayout />}>
         <Route path={ROUTES.catalogo} element={<CatalogoPublico />} />
         <Route path="/catalogo/:id" element={<DetallePublico />} />
+        <Route path={ROUTES.carrito} element={<Carrito />} />
         <Route path={ROUTES.misSolicitudes} element={<MisSolicitudes />} />
       </Route>
       <Route element={<MainLayout />}>

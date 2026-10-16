@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import EncabezadoTienda from '../components/tienda/EncabezadoTienda'
 import PieTienda from '../components/tienda/PieTienda'
+import { CartProvider } from '../hooks/useCart'
 
 export default function TiendaLayout() {
   const { pathname, hash } = useLocation()
@@ -32,12 +33,14 @@ export default function TiendaLayout() {
   }, [pathname, hash])
 
   return (
-    <div className="flex min-h-screen flex-col bg-fondo">
-      <EncabezadoTienda />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <Outlet />
-      </main>
-      <PieTienda />
-    </div>
+    <CartProvider>
+      <div className="flex min-h-screen flex-col bg-fondo">
+        <EncabezadoTienda />
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+          <Outlet />
+        </main>
+        <PieTienda />
+      </div>
+    </CartProvider>
   )
 }
