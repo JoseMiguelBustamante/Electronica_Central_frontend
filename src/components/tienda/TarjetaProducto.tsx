@@ -1,10 +1,13 @@
-import { HeartIcon, ShoppingCartIcon } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { HeartIcon, MinusIcon, PlusIcon, ShoppingCartIcon } from '@phosphor-icons/react'
 import { Link, useLocation } from 'react-router-dom'
 import Disponibilidad from './Disponibilidad'
 import ImagenProducto from './ImagenProducto'
 import { useCart } from '../../hooks/useCart'
+import { useToast } from '../../hooks/useToast'
 import type { ProductoPublico } from '../../services/catalogoService'
 import { formatPrecioMostrador } from '../../utils/formatters'
+import { ROUTES } from '../../utils/navigation'
 import { FOCUS_RING, cn } from '../../utils/styles'
 
 interface TarjetaProductoProps {
@@ -24,16 +27,52 @@ function lineaSecundaria(producto: ProductoPublico): string {
   return partes.join(' · ')
 }
 
+function formatearCantidad(valor: number): string {
+  return Number.isInteger(valor) ? String(valor) : String(valor)
+}
+
 export default function TarjetaProducto({ producto, guardado, vista, onGuardar }: TarjetaProductoProps) {
   const enLista = vista === 'lista'
-  const { addItem } = useCart()
+  const toast = useToast()
+  const { addItem, quantityOf } = useCart()
   const ubicacion = useLocation()
   const fromCatalog = `${ubicacion.pathname}${ubicacion.search}`
+  const enCarrito = quantityOf(producto.id)
+  const [cantidad, setCantidad] = useState(1)
+  const [destacado, setDestacado] = useState(false)
+
+  const cantidadSegura = Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1
+
+  const ajustarCantidad = (delta: number) => {
+    setCantidad((actual) => {
+      const base = Number.isFinite(actual) && actual > 0 ? actual : 1
+      return Math.max(1, Math.round((base + delta) * 1000) / 1000)
+    })
+  }
+
+  const agregar = () => {
+    const agregadas = cantidadSegura
+    const totalLinea = addItem({
+      id: producto.id,
+      codigo: producto.codigo,
+      nombre: producto.nombre,
+      precio: producto.precio,
+      disponibilidad: producto.disponibilidad,
+      cantidad: agregadas,
+    })
+    setDestacado(true)
+    window.setTimeout(() => setDestacado(false), 280)
+    toast.success(
+      `Agregaste ${formatearCantidad(agregadas)} × ${producto.codigo}. Ahora tienes ${formatearCantidad(totalLinea)}.`,
+      { action: { label: 'Ver carrito', to: ROUTES.carrito } },
+    )
+  }
 
   return (
     <article
       className={cn(
-        'relative rounded-xl border border-linea bg-white shadow-sm',
+        'relative rounded-xl border bg-white shadow-sm transition duration-200',
+        destacado ? 'border-disponible scale-[1.01]' : 'border-linea',
         enLista && 'flex items-stretch',
       )}
     >
@@ -82,26 +121,74 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
             </div>
           </div>
         </Link>
-        <button
-          type="button"
-          aria-label={`Agregar ${producto.nombre} al carrito`}
-          onClick={() => addItem({
-            id: producto.id,
-            codigo: producto.codigo,
-            nombre: producto.nombre,
-            precio: producto.precio,
-            disponibilidad: producto.disponibilidad,
-            cantidad: 1,
-          })}
-          className={cn(
-            'inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-cobre px-3 text-sm font-semibold text-white hover:bg-cobre-press',
-            enLista ? '' : 'mt-3 w-full',
-            FOCUS_RING,
-          )}
-        >
-          <ShoppingCartIcon size={16} aria-hidden="true" />
-          Al carrito
-        </button>
+
+        <div className={cn('flex shrink-0 flex-col gap-2', enLista ? 'w-48' : 'mt-3 w-full')}>
+          <div
+            className={cn(
+              'overflow-hidden transition-all duration-200',
+              enCarrito > 0 ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0',
+            )}
+            aria-live="polite"
+          >
+            {enCarrito > 0 && (
+              <p className="rounded-md bg-disponible-fondo px-2 py-1 text-xs font-medium text-disponible">
+                Ya tienes {formatearCantidad(enCarrito)} {enCarrito === 1 ? 'unidad' : 'unidades'} en el carrito
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="inline-flex h-10 flex-1 items-center rounded-lg border border-linea bg-white">
+              <button
+                type="button"
+                aria-label="Disminuir cantidad"
+                onClick={() => ajustarCantidad(-1)}
+                className={`grid size-10 place-items-center text-tinta hover:bg-suave ${FOCUS_RING}`}
+              >
+                <MinusIcon size={14} aria-hidden="true" />
+              </button>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                aria-label={`Cantidad de ${producto.nombre}`}
+                value={Number.isFinite(cantidad) ? cantidad : ''}
+                onChange={(event) => {
+                  const valor = Number(event.target.value)
+                  setCantidad(Number.isFinite(valor) ? valor : Number.NaN)
+                }}
+                onBlur={() => {
+                  if (!Number.isFinite(cantidad) || cantidad < 1) setCantidad(1)
+                }}
+                className={`h-10 min-w-0 flex-1 border-x border-linea bg-transparent text-center font-mono text-sm ${FOCUS_RING}`}
+              />
+              <button
+                type="button"
+                aria-label="Aumentar cantidad"
+                onClick={() => ajustarCantidad(1)}
+                className={`grid size-10 place-items-center text-tinta hover:bg-suave ${FOCUS_RING}`}
+              >
+                <PlusIcon size={14} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            aria-label={`Agregar ${formatearCantidad(cantidadSegura)} de ${producto.nombre} al carrito`}
+            onClick={agregar}
+            className={cn(
+              'inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-cobre px-3 text-sm font-semibold text-white transition duration-200 hover:bg-cobre-press',
+              FOCUS_RING,
+            )}
+          >
+            <ShoppingCartIcon size={16} aria-hidden="true" />
+            {cantidadSegura === 1
+              ? 'Agregar al carrito'
+              : `Agregar ${formatearCantidad(cantidadSegura)} unidades`}
+          </button>
+        </div>
       </div>
     </article>
   )

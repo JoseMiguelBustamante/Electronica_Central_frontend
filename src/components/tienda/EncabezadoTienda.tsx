@@ -333,18 +333,19 @@ function NavLinkItem({
 }
 
 function Carrito() {
-  const { lineCount } = useCart()
-  const etiqueta = lineCount === 1 ? '1 producto' : `${lineCount} productos`
+  const { lineCount, unitCount } = useCart()
+  const etiqueta = `${lineCount === 1 ? '1 producto' : `${lineCount} productos`} · ${unitCount === 1 ? '1 unidad' : `${unitCount} unidades`}`
 
   return (
     <Link
       to={ROUTES.carrito}
-      className={`relative grid size-10 place-items-center text-tinta hover:text-mascara ${FOCUS_RING}`}
+      className={`relative grid size-10 place-items-center text-tinta transition duration-200 hover:text-mascara ${FOCUS_RING}`}
       aria-label={`Carrito, ${etiqueta}`}
+      title={etiqueta}
     >
       <ShoppingCartIcon size={22} aria-hidden="true" />
-      <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white">
-        {lineCount > 99 ? '99+' : lineCount}
+      <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white transition duration-200">
+        {unitCount > 99 ? '99+' : unitCount}
       </span>
     </Link>
   )

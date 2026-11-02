@@ -65,7 +65,8 @@ interface CartContextValue {
   lineCount: number
   unitCount: number
   total: number
-  addItem: (item: Omit<CartItem, 'cantidad'> & { cantidad?: number }) => void
+  quantityOf: (id: string) => number
+  addItem: (item: Omit<CartItem, 'cantidad'> & { cantidad?: number }) => number
   setQuantity: (id: string, cantidad: number) => void
   removeItem: (id: string) => void
   clear: () => void
@@ -76,17 +77,24 @@ const CartContext = createContext<CartContextValue | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const items = useSyncExternalStore(subscribeCart, getCartSnapshot, getServerSnapshot)
 
+  const quantityOf = useCallback((id: string) => {
+    const row = items.find((item) => item.id === id)
+    return row?.cantidad ?? 0
+  }, [items])
+
   const addItem = useCallback((entrada: Omit<CartItem, 'cantidad'> & { cantidad?: number }) => {
     const cantidad = Math.max(0.0001, entrada.cantidad ?? 1)
     const actual = loadCart()
     const idx = actual.findIndex((row) => row.id === entrada.id)
     let next: CartItem[]
+    let totalLinea = cantidad
     if (idx >= 0) {
+      totalLinea = actual[idx].cantidad + cantidad
       next = actual.map((row, i) => (
         i === idx
           ? {
               ...row,
-              cantidad: row.cantidad + cantidad,
+              cantidad: totalLinea,
               precio: entrada.precio,
               nombre: entrada.nombre,
               codigo: entrada.codigo,
@@ -105,6 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }]
     }
     write(next)
+    return totalLinea
   }, [])
 
   const setQuantity = useCallback((id: string, cantidad: number) => {
@@ -129,11 +138,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     lineCount: cartLineCount(items),
     unitCount: cartUnitCount(items),
     total: cartTotal(items),
+    quantityOf,
     addItem,
     setQuantity,
     removeItem,
     clear,
-  }), [items, addItem, setQuantity, removeItem, clear])
+  }), [items, quantityOf, addItem, setQuantity, removeItem, clear])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

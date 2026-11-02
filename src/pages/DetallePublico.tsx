@@ -7,6 +7,7 @@ import LoadingState, { Skeleton } from '../components/LoadingState'
 import Disponibilidad from '../components/tienda/Disponibilidad'
 import ImagenProducto from '../components/tienda/ImagenProducto'
 import { useCart } from '../hooks/useCart'
+import { useToast } from '../hooks/useToast'
 import { COMPRA } from '../lib/compraMensajes'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
@@ -33,6 +34,7 @@ export default function DetallePublico() {
   const [aviso, setAviso] = useState<string | null>(null)
   const [avisoError, setAvisoError] = useState<string | null>(null)
   const { addItem } = useCart()
+  const toast = useToast()
   const conSesion = Boolean(leerToken())
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function DetallePublico() {
       return
     }
     setAvisoError(null)
-    addItem({
+    const totalLinea = addItem({
       id: producto.id,
       codigo: producto.codigo,
       nombre: producto.nombre,
@@ -91,6 +93,10 @@ export default function DetallePublico() {
       cantidad: unidades,
     })
     setAviso(COMPRA.fichaAgregado)
+    toast.success(
+      `Agregaste ${unidades} × ${producto.codigo}. Ahora tienes ${totalLinea}.`,
+      { action: { label: 'Ver carrito', to: ROUTES.carrito } },
+    )
   }
 
   if (cargando) {

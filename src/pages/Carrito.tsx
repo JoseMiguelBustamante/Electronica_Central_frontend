@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ShoppingCartIcon, TrashIcon } from '@phosphor-icons/react'
+import { MinusIcon, PlusIcon, ShoppingCartIcon, TrashIcon } from '@phosphor-icons/react'
 import Alert from '../components/Alert'
 import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
+import ImagenProducto from '../components/tienda/ImagenProducto'
 import { useCart } from '../hooks/useCart'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
@@ -13,10 +14,18 @@ import { formatCurrency } from '../utils/formatters'
 import { ROUTES } from '../utils/navigation'
 import { FOCUS_RING } from '../utils/styles'
 
+function etiquetaUnidades(n: number): string {
+  return n === 1 ? '1 unidad' : `${n} unidades`
+}
+
+function etiquetaProductos(n: number): string {
+  return n === 1 ? '1 producto' : `${n} productos`
+}
+
 export default function Carrito() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { items, total, setQuantity, removeItem, clear } = useCart()
+  const { items, lineCount, unitCount, total, setQuantity, removeItem, clear } = useCart()
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [avisoPago, setAvisoPago] = useState<'ok' | 'cancel' | null>(null)
@@ -63,7 +72,7 @@ export default function Carrito() {
         description={COMPRA.carritoVacio}
         action={(
           <Link to={ROUTES.catalogo} className={`inline-flex ${FOCUS_RING}`}>
-            <Button>Ir al catálogo</Button>
+            <Button>Seguir comprando</Button>
           </Link>
         )}
       />
@@ -86,7 +95,10 @@ export default function Carrito() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-tinta">Carrito</h1>
+        <h1 className="text-2xl font-bold text-tinta">Tu carrito</h1>
+        <p className="mt-1 text-sm text-secundario">
+          {etiquetaProductos(lineCount)} · {etiquetaUnidades(unitCount)}
+        </p>
         <p className="mt-1 text-sm text-secundario">{COMPRA.carritoResumen}</p>
       </header>
 
@@ -104,39 +116,83 @@ export default function Carrito() {
 
       <ul className="divide-y divide-linea rounded-xl border border-linea bg-superficie">
         {items.map((item) => (
-          <li key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <Link to={`/catalogo/${item.id}`} className={`font-semibold text-tinta hover:text-mascara ${FOCUS_RING}`}>
-                {item.nombre}
-              </Link>
-              <p className="mt-0.5 font-mono text-xs text-secundario">{item.codigo}</p>
-              <p className="mt-1 font-mono text-sm text-cobre">{formatCurrency(item.precio)} c/u</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-secundario">
-                Cant.
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={item.cantidad}
+          <li key={item.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+            <Link to={`/catalogo/${item.id}`} className={`shrink-0 ${FOCUS_RING}`}>
+              <ImagenProducto
+                codigo={item.codigo}
+                categoria=""
+                nombre={item.nombre}
+                marcoClassName="h-20 w-20 rounded-lg border border-linea bg-white"
+                className="max-h-16"
+              />
+            </Link>
+
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link to={`/catalogo/${item.id}`} className={`font-semibold text-tinta hover:text-mascara ${FOCUS_RING}`}>
+                    {item.nombre}
+                  </Link>
+                  <p className="mt-0.5 font-mono text-xs text-secundario">{item.codigo}</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Quitar ${item.nombre}`}
                   disabled={confirmando}
-                  onChange={(event) => setQuantity(item.id, Number(event.target.value))}
-                  className={`ml-2 h-10 w-20 rounded-md border border-campo bg-white px-2 font-mono text-sm ${FOCUS_RING}`}
-                />
-              </label>
-              <p className="min-w-20 text-right font-mono text-sm font-semibold text-tinta">
-                {formatCurrency(item.precio * item.cantidad)}
-              </p>
-              <button
-                type="button"
-                aria-label={`Quitar ${item.nombre}`}
-                disabled={confirmando}
-                onClick={() => removeItem(item.id)}
-                className={`grid size-10 place-items-center rounded-md text-secundario hover:bg-suave hover:text-peligro disabled:opacity-50 ${FOCUS_RING}`}
-              >
-                <TrashIcon size={18} aria-hidden="true" />
-              </button>
+                  onClick={() => removeItem(item.id)}
+                  className={`grid size-10 shrink-0 place-items-center rounded-md text-secundario hover:bg-suave hover:text-peligro disabled:opacity-50 ${FOCUS_RING}`}
+                >
+                  <TrashIcon size={18} aria-hidden="true" />
+                </button>
+              </div>
+
+              <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs text-secundario">Precio unitario</dt>
+                  <dd className="font-mono text-tinta">{formatCurrency(item.precio)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-secundario">Cantidad</dt>
+                  <dd>
+                    <div className="mt-0.5 inline-flex h-11 items-center rounded-lg border border-linea bg-white">
+                      <button
+                        type="button"
+                        aria-label="Disminuir cantidad"
+                        disabled={confirmando}
+                        onClick={() => setQuantity(item.id, item.cantidad - 1)}
+                        className={`grid size-11 place-items-center hover:bg-suave disabled:opacity-50 ${FOCUS_RING}`}
+                      >
+                        <MinusIcon size={16} aria-hidden="true" />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={item.cantidad}
+                        disabled={confirmando}
+                        aria-label={`Cantidad de ${item.nombre}`}
+                        onChange={(event) => setQuantity(item.id, Number(event.target.value))}
+                        className={`h-11 w-14 border-x border-linea bg-transparent text-center font-mono text-sm ${FOCUS_RING}`}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Aumentar cantidad"
+                        disabled={confirmando}
+                        onClick={() => setQuantity(item.id, item.cantidad + 1)}
+                        className={`grid size-11 place-items-center hover:bg-suave disabled:opacity-50 ${FOCUS_RING}`}
+                      >
+                        <PlusIcon size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-secundario">Subtotal</dt>
+                  <dd className="font-mono font-semibold text-disponible">
+                    {formatCurrency(item.precio * item.cantidad)}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </li>
         ))}
@@ -150,7 +206,12 @@ export default function Carrito() {
         <p className="mt-3 rounded-md border border-linea bg-suave p-3 text-sm text-secundario">
           Al pagar se crea la venta, se reserva stock y Stripe cobra en BOB (test). La entrega en tienda queda habilitada cuando el webhook confirma el pago.
         </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+          <Link to={ROUTES.catalogo} className={`inline-flex ${FOCUS_RING}`}>
+            <Button variant="secondary" disabled={confirmando}>
+              Seguir comprando
+            </Button>
+          </Link>
           <Button variant="secondary" disabled={confirmando} onClick={() => clear()}>
             Vaciar carrito
           </Button>

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { CheckCircleIcon, InfoIcon, WarningCircleIcon, XIcon } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import IconButton from './IconButton'
 import { ToastContext } from '../hooks/toastContext'
-import type { ToastApi } from '../hooks/toastContext'
-import { cn } from '../utils/styles'
+import type { ToastAction, ToastApi, ToastOptions } from '../hooks/toastContext'
+import { FOCUS_RING, cn } from '../utils/styles'
 
 type ToastVariant = 'success' | 'error' | 'info'
 
@@ -13,6 +14,7 @@ interface ToastItem {
   id: number
   variant: ToastVariant
   message: string
+  action?: ToastAction
 }
 
 const VARIANTS: Record<ToastVariant, { classes: string; iconClass: string; icon: Icon }> = {
@@ -21,7 +23,7 @@ const VARIANTS: Record<ToastVariant, { classes: string; iconClass: string; icon:
   info: { classes: 'border-mascara/40 bg-suave text-tinta', iconClass: 'text-mascara', icon: InfoIcon },
 }
 
-const DURATION_MS: Record<ToastVariant, number> = { success: 5000, info: 5000, error: 8000 }
+const DURATION_MS: Record<ToastVariant, number> = { success: 4500, info: 5000, error: 8000 }
 
 /** Notificaciones internas. Se montan una vez y se usan con `useToast()`. */
 export default function ToastProvider({ children }: { children: ReactNode }) {
@@ -36,9 +38,9 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const push = useCallback(
-    (variant: ToastVariant, message: string) => {
+    (variant: ToastVariant, message: string, options?: ToastOptions) => {
       const id = ++nextId.current
-      setToasts((prev) => [...prev, { id, variant, message }])
+      setToasts((prev) => [...prev, { id, variant, message, action: options?.action }])
       timers.current.set(
         id,
         window.setTimeout(() => dismiss(id), DURATION_MS[variant]),
@@ -57,9 +59,9 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
 
   const api = useMemo<ToastApi>(
     () => ({
-      success: (message) => push('success', message),
-      error: (message) => push('error', message),
-      info: (message) => push('info', message),
+      success: (message, options) => push('success', message, options),
+      error: (message, options) => push('error', message, options),
+      info: (message, options) => push('info', message, options),
     }),
     [push],
   )
@@ -69,7 +71,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col items-end gap-2 sm:left-auto sm:w-96"
+        className="pointer-events-none fixed top-4 right-4 z-[60] flex w-[min(100%-2rem,22rem)] flex-col items-stretch gap-2"
       >
         {toasts.map((toast) => {
           const { classes, iconClass, icon: ToastIcon } = VARIANTS[toast.variant]
@@ -78,12 +80,23 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               role={toast.variant === 'error' ? 'alert' : undefined}
               className={cn(
-                'pointer-events-auto flex w-full items-start gap-3 rounded-lg border bg-superficie p-3 shadow-md',
+                'pointer-events-auto flex w-full items-start gap-3 rounded-lg border bg-superficie p-3 shadow-md transition duration-200',
                 classes,
               )}
             >
               <ToastIcon size={20} weight="fill" aria-hidden="true" className={cn('mt-0.5 shrink-0', iconClass)} />
-              <p className="min-w-0 flex-1 text-sm font-medium">{toast.message}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{toast.message}</p>
+                {toast.action && (
+                  <Link
+                    to={toast.action.to}
+                    onClick={() => dismiss(toast.id)}
+                    className={`mt-1 inline-block text-sm font-semibold text-mascara hover:underline ${FOCUS_RING}`}
+                  >
+                    {toast.action.label}
+                  </Link>
+                )}
+              </div>
               <IconButton
                 label="Cerrar notificación"
                 icon={XIcon}
