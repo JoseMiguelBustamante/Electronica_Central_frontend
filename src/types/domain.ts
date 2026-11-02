@@ -194,15 +194,31 @@ export interface Cliente {
   correo: string
 }
 
+export interface LineaVenta {
+  idDetalleVenta: string
+  idProducto: string
+  codigo: string
+  nombre: string
+  cantidad: number
+  precioUnitario: number
+  subtotal: number
+}
+
 export interface Venta {
   id: string
   fechaHora: string
   estado: string
   idCliente: string
   clienteNombre: string
+  clienteDocumento?: string
   total?: number
   cobrado?: number
   saldo?: number
+  resumenProductos?: string
+  numeroComprobante?: string | null
+  detalles?: LineaVenta[]
+  pagos?: PagoVenta[]
+  comprobante?: { numero: string; fechaEmision: string } | null
 }
 
 export interface SolicitudProducto {

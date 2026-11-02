@@ -20,11 +20,12 @@ import { listarClientes } from '../services/clienteService'
 import {
   anularVenta,
   confirmarPago,
-  confirmarVenta,
   crearPagoEnLinea,
   crearVenta,
+  descargarComprobantePdf,
   listarPagosVenta,
   listarVentas,
+  obtenerVenta,
   registrarPagoVenta,
 } from '../services/ventaService'
 import { ROUTES } from '../utils/navigation'
@@ -41,6 +42,7 @@ export default function Ventas() {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [creando, setCreando] = useState(false)
   const [pagoVenta, setPagoVenta] = useState<Venta | null>(null)
+  const [detalleVentaId, setDetalleVentaId] = useState<string | null>(null)
 
   const recargar = useCallback(() => {
     setEstado('cargando')
@@ -83,15 +85,42 @@ export default function Ventas() {
     },
     { key: 'cliente', header: 'Cliente', primary: true, cell: (row) => row.clienteNombre || row.idCliente },
     {
+      key: 'productos',
+      header: 'Productos',
+      cell: (row) => (
+        <span className="line-clamp-2 max-w-xs text-sm text-secundario" title={row.resumenProductos || undefined}>
+          {row.resumenProductos || '—'}
+        </span>
+      ),
+    },
+    {
       key: 'estado',
       header: 'Estado',
-      cell: (row) => <Badge variant={row.estado === 'CONFIRMADA' ? 'success' : 'neutral'}>{row.estado}</Badge>,
+      cell: (row) => {
+        if (row.estado === 'CONFIRMADA' && Number(row.saldo ?? 0) === 0) {
+          return <Badge variant="success">Pagada</Badge>
+        }
+        if (row.estado === 'CONFIRMADA') {
+          return <Badge variant="warning">Por completar pago</Badge>
+        }
+        if (row.estado === 'BORRADOR') {
+          return <Badge variant="neutral">Por cobrar</Badge>
+        }
+        return <Badge variant="neutral">{row.estado}</Badge>
+      },
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      cell: (row) => (
+        <span className="font-mono text-tinta">{formatCurrency(Number(row.total ?? 0))}</span>
+      ),
     },
     {
       key: 'saldo',
       header: 'Saldo',
       cell: (row) => {
-        if (row.estado !== 'CONFIRMADA') return '—'
+        if (row.estado === 'ANULADA') return '—'
         const saldo = Number(row.saldo ?? 0)
         return (
           <span className={saldo === 0 ? 'text-disponible' : 'text-tinta'}>
@@ -106,21 +135,13 @@ export default function Ventas() {
       header: 'Acciones',
       cell: (row) => (
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setDetalleVentaId(row.id)}>
+            Detalle
+          </Button>
           {row.estado === 'BORRADOR' && (
             <>
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  try {
-                    await confirmarVenta(row.id, claveIdempotencia('venta'))
-                    toast.success('Venta confirmada (stock reservado). Ahora cobrá en Pagos.')
-                    recargar()
-                  } catch (err) {
-                    toast.error(mensajeError(err, 'No se pudo confirmar.'))
-                  }
-                }}
-              >
-                Confirmar
+              <Button variant="secondary" onClick={() => setPagoVenta(row)}>
+                Cobrar
               </Button>
               <Button
                 variant="secondary"
@@ -159,7 +180,7 @@ export default function Ventas() {
         <div>
           <h2 className="text-xl font-semibold text-tinta">Ventas</h2>
           <p className="mt-1 text-sm text-secundario">
-            Cliente → producto (precio de catálogo) → confirmar → cobrar (efectivo / Stripe).
+            Cliente en tienda → producto → cobrar. Stripe confirma sola; efectivo confirma al registrar el pago.
           </p>
         </div>
         <Button onClick={() => setCreando(true)} disabled={clientes.length === 0}>
@@ -170,8 +191,8 @@ export default function Ventas() {
 
       <Select label="Estado" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
         <option value="">Todos</option>
-        <option value="BORRADOR">Borrador</option>
-        <option value="CONFIRMADA">Confirmada</option>
+        <option value="BORRADOR">Por cobrar</option>
+        <option value="CONFIRMADA">Confirmada / pagada</option>
         <option value="ANULADA">Anulada</option>
       </Select>
 
@@ -194,9 +215,16 @@ export default function Ventas() {
           clientes={clientes}
           onClose={() => setCreando(false)}
           onSubmit={async (datos) => {
-            await crearVenta(datos)
-            toast.success('Venta creada en borrador.')
+            const creada = await crearVenta(datos)
+            toast.success('Venta lista. Cobrá con efectivo o Stripe.')
             setCreando(false)
+            setPagoVenta({
+              ...creada,
+              clienteNombre:
+                creada.clienteNombre
+                || clientes.find((c) => c.id === datos.idCliente)?.nombre
+                || '',
+            })
             recargar()
           }}
         />
@@ -210,11 +238,186 @@ export default function Ventas() {
             recargar()
           }}
           onChanged={() => {
-            toast.success('Pago actualizado.')
+            recargar()
           }}
         />
       )}
+
+      {detalleVentaId && (
+        <PanelDetalleVenta
+          idVenta={detalleVentaId}
+          onClose={() => setDetalleVentaId(null)}
+        />
+      )}
     </div>
+  )
+}
+
+function PanelDetalleVenta({
+  idVenta,
+  onClose,
+}: {
+  idVenta: string
+  onClose: () => void
+}) {
+  const toast = useToast()
+  const [venta, setVenta] = useState<Venta | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [descargando, setDescargando] = useState(false)
+
+  useEffect(() => {
+    let vigente = true
+    setCargando(true)
+    obtenerVenta(idVenta).then(
+      (data) => {
+        if (!vigente) return
+        setVenta(data)
+        setCargando(false)
+      },
+      (err) => {
+        if (!vigente) return
+        setError(mensajeError(err, 'No se pudo cargar el detalle.'))
+        setCargando(false)
+      },
+    )
+    return () => {
+      vigente = false
+    }
+  }, [idVenta])
+
+  const puedePdf = Boolean(
+    venta
+    && (venta.estado === 'CONFIRMADA' || venta.estado === 'ANULADA')
+    && (venta.comprobante?.numero || venta.numeroComprobante),
+  )
+
+  return (
+    <Modal
+      title={venta?.numeroComprobante || venta?.comprobante?.numero
+        ? `Comprobante ${venta.numeroComprobante || venta.comprobante?.numero}`
+        : 'Detalle de venta'}
+      onClose={onClose}
+      busy={cargando || descargando}
+      footer={puedePdf ? (
+        <Button
+          variant="secondary"
+          loading={descargando}
+          onClick={async () => {
+            setDescargando(true)
+            try {
+              await descargarComprobantePdf(idVenta)
+              toast.success('PDF descargado.')
+            } catch (err) {
+              toast.error(mensajeError(err, 'No se pudo descargar el PDF.'))
+            } finally {
+              setDescargando(false)
+            }
+          }}
+        >
+          Descargar PDF
+        </Button>
+      ) : undefined}
+    >
+      {cargando ? (
+        <LoadingState label="Cargando detalle…">
+          <Skeleton className="h-40" />
+        </LoadingState>
+      ) : error ? (
+        <Alert variant="error" title="Error">{error}</Alert>
+      ) : venta ? (
+        <div className="space-y-4 text-sm">
+          <dl className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <dt className="text-secundario">Fecha</dt>
+              <dd className="text-tinta">{venta.fechaHora ? formatDateTime(venta.fechaHora) : '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-secundario">Estado</dt>
+              <dd className="text-tinta">{venta.estado}</dd>
+            </div>
+            <div>
+              <dt className="text-secundario">Cliente</dt>
+              <dd className="text-tinta">
+                {venta.clienteNombre}
+                {venta.clienteDocumento ? ` · ${venta.clienteDocumento}` : ''}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-secundario">N.º interno</dt>
+              <dd className="font-mono text-xs text-secundario">{venta.id}</dd>
+            </div>
+          </dl>
+
+          <div className="overflow-x-auto rounded-md border border-linea">
+            <table className="min-w-full text-left text-sm">
+              <caption className="sr-only">Líneas de la venta</caption>
+              <thead className="bg-suave text-secundario">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Código</th>
+                  <th className="px-3 py-2 font-medium">Producto</th>
+                  <th className="px-3 py-2 font-medium text-right">Cant.</th>
+                  <th className="px-3 py-2 font-medium text-right">P. unit.</th>
+                  <th className="px-3 py-2 font-medium text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-linea">
+                {(venta.detalles ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-3 text-secundario">Sin líneas.</td>
+                  </tr>
+                ) : (
+                  venta.detalles!.map((linea) => (
+                    <tr key={linea.idDetalleVenta || `${linea.idProducto}-${linea.codigo}`}>
+                      <td className="px-3 py-2 font-mono text-xs">{linea.codigo}</td>
+                      <td className="px-3 py-2 text-tinta">{linea.nombre}</td>
+                      <td className="px-3 py-2 text-right font-mono">{linea.cantidad}</td>
+                      <td className="px-3 py-2 text-right font-mono">{formatCurrency(linea.precioUnitario)}</td>
+                      <td className="px-3 py-2 text-right font-mono">{formatCurrency(linea.subtotal)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <dl className="grid gap-1 border-t border-linea pt-3 sm:grid-cols-3">
+            <div>
+              <dt className="text-secundario">Total</dt>
+              <dd className="font-mono font-semibold text-tinta">{formatCurrency(Number(venta.total ?? 0))}</dd>
+            </div>
+            <div>
+              <dt className="text-secundario">Cobrado</dt>
+              <dd className="font-mono text-tinta">{formatCurrency(Number(venta.cobrado ?? 0))}</dd>
+            </div>
+            <div>
+              <dt className="text-secundario">Saldo</dt>
+              <dd className="font-mono text-tinta">{formatCurrency(Number(venta.saldo ?? 0))}</dd>
+            </div>
+          </dl>
+
+          <div>
+            <p className="mb-2 font-medium text-tinta">Pagos</p>
+            {(venta.pagos ?? []).length === 0 ? (
+              <p className="text-secundario">Sin pagos registrados.</p>
+            ) : (
+              <ul className="divide-y divide-linea rounded-md border border-linea">
+                {venta.pagos!.map((pago) => (
+                  <li key={pago.id} className="flex flex-wrap justify-between gap-2 px-3 py-2">
+                    <span>
+                      {formatCurrency(pago.monto)} · {pago.metodo} · {pago.estado}
+                    </span>
+                    <span className="text-xs text-secundario">
+                      {pago.fechaHora ? formatDateTime(pago.fechaHora) : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </Modal>
   )
 }
 
@@ -311,7 +514,7 @@ function FormularioVenta({
       busy={ocupado}
       footer={(
         <Button type="submit" form="form-venta" loading={ocupado} disabled={!puedeCrear}>
-          Crear borrador
+          Crear y cobrar
         </Button>
       )}
     >
@@ -438,8 +641,8 @@ function PanelPagos({
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const saldo = Number(venta.saldo ?? 0)
-  const yaPagada = saldo <= 0
+  const saldo = Number(venta.saldo ?? venta.total ?? 0)
+  const yaPagada = venta.estado === 'CONFIRMADA' && Number(venta.saldo ?? 0) <= 0
 
   const cargar = useCallback(() => {
     listarPagosVenta(venta.id).then(setPagos).catch(() => setPagos([]))
@@ -471,6 +674,7 @@ function PanelPagos({
           monto: Number(monto),
           metodo: 'EFECTIVO',
         })
+        toast.success('Efectivo recibido. Venta confirmada.')
         setMonto('')
         cargar()
         onChanged()

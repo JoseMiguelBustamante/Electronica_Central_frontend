@@ -20,8 +20,16 @@ import {
   actualizarStockMinimo,
   crearAjuste,
   listarInventario,
+  listarMovimientos,
 } from '../services/inventarioService'
-import type { ItemInventario } from '../types/domain'
+import type { ItemInventario, MovimientoInventario } from '../types/domain'
+import { formatDateTime } from '../utils/formatters'
+
+const etiquetaMotivo = (motivo: string) => {
+  if (motivo === 'VENTA_CONFIRMAR') return 'Salida por venta'
+  if (motivo === 'VENTA_ANULAR') return 'Entrada por anulación de venta'
+  return motivo
+}
 
 export default function Inventario() {
   const toast = useToast()
@@ -32,6 +40,7 @@ export default function Inventario() {
   const [buscar, setBuscar] = useState('')
   const [ajuste, setAjuste] = useState<ItemInventario | null>(null)
   const [minimo, setMinimo] = useState<ItemInventario | null>(null)
+  const [movimientosDe, setMovimientosDe] = useState<ItemInventario | null>(null)
 
   const recargar = useCallback(() => {
     setEstado('cargando')
@@ -76,6 +85,9 @@ export default function Inventario() {
       header: 'Acciones',
       cell: (row) => (
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setMovimientosDe(row)}>
+            Movimientos
+          </Button>
           <Button variant="secondary" onClick={() => setAjuste(row)}>
             Ajuste
           </Button>
@@ -152,7 +164,73 @@ export default function Inventario() {
           }}
         />
       )}
+
+      {movimientosDe && (
+        <PanelMovimientos
+          item={movimientosDe}
+          onClose={() => setMovimientosDe(null)}
+        />
+      )}
     </div>
+  )
+}
+
+function PanelMovimientos({
+  item,
+  onClose,
+}: {
+  item: ItemInventario
+  onClose: () => void
+}) {
+  const [items, setItems] = useState<MovimientoInventario[]>([])
+  const [estado, setEstado] = useState<EstadoCarga>('cargando')
+
+  useEffect(() => {
+    let vigente = true
+    listarMovimientos(item.idProducto, { limite: 50 }).then(
+      ({ items: lista }) => {
+        if (!vigente) return
+        setItems(lista)
+        setEstado('listo')
+      },
+      () => {
+        if (vigente) setEstado('error')
+      },
+    )
+    return () => {
+      vigente = false
+    }
+  }, [item.idProducto])
+
+  return (
+    <Modal title={`Movimientos — ${item.codigo}`} onClose={onClose}>
+      <p className="mb-3 text-sm text-secundario">{item.nombre} · stock actual {item.stockActual}</p>
+      {estado === 'cargando' ? (
+        <LoadingState label="Cargando movimientos…">
+          <Skeleton className="h-32" />
+        </LoadingState>
+      ) : estado === 'error' ? (
+        <Alert variant="error" title="No se pudieron cargar los movimientos" />
+      ) : items.length === 0 ? (
+        <p className="text-sm text-secundario">Sin movimientos registrados.</p>
+      ) : (
+        <ul className="max-h-80 divide-y divide-linea overflow-y-auto rounded-md border border-linea text-sm">
+          {items.map((mov) => (
+            <li key={mov.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+              <div>
+                <p className="font-medium text-tinta">
+                  {mov.tipo} · {mov.cantidad}
+                </p>
+                <p className="text-secundario">{etiquetaMotivo(mov.motivo)}</p>
+              </div>
+              <time className="text-xs text-secundario" dateTime={mov.fechaHora}>
+                {mov.fechaHora ? formatDateTime(mov.fechaHora) : '—'}
+              </time>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Modal>
   )
 }
 

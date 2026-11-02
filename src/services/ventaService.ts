@@ -1,5 +1,5 @@
 import api from '../lib/api'
-import type { PagoVenta, Venta } from '../types/domain'
+import type { LineaVenta, PagoVenta, Venta } from '../types/domain'
 
 interface Meta {
   pagina: number
@@ -7,16 +7,15 @@ interface Meta {
   total: number
 }
 
-function mapVenta(row: Record<string, unknown>): Venta {
+function mapLinea(row: Record<string, unknown>): LineaVenta {
   return {
-    id: String(row.idVenta ?? row.id_venta ?? row.id),
-    fechaHora: String(row.fechaHora ?? row.fecha_hora ?? ''),
-    estado: String(row.estado ?? ''),
-    idCliente: String(row.idCliente ?? row.id_cliente ?? ''),
-    clienteNombre: String(row.clienteNombre ?? row.cliente_nombre ?? ''),
-    total: row.total != null ? Number(row.total) : undefined,
-    cobrado: row.cobrado != null ? Number(row.cobrado) : undefined,
-    saldo: row.saldo != null ? Number(row.saldo) : undefined,
+    idDetalleVenta: String(row.idDetalleVenta ?? row.id_detalle_venta ?? ''),
+    idProducto: String(row.idProducto ?? row.id_producto ?? ''),
+    codigo: String(row.codigo ?? ''),
+    nombre: String(row.nombre ?? ''),
+    cantidad: Number(row.cantidad ?? 0),
+    precioUnitario: Number(row.precioUnitario ?? row.precio_unitario ?? 0),
+    subtotal: Number(row.subtotal ?? 0),
   }
 }
 
@@ -27,6 +26,43 @@ function mapPago(row: Record<string, unknown>): PagoVenta {
     monto: Number(row.monto ?? 0),
     metodo: String(row.metodo ?? ''),
     estado: String(row.estado ?? ''),
+  }
+}
+
+function mapVenta(row: Record<string, unknown>): Venta {
+  const comprobante = row.comprobante as Record<string, unknown> | null | undefined
+  return {
+    id: String(row.idVenta ?? row.id_venta ?? row.id),
+    fechaHora: String(row.fechaHora ?? row.fecha_hora ?? ''),
+    estado: String(row.estado ?? ''),
+    idCliente: String(row.idCliente ?? row.id_cliente ?? ''),
+    clienteNombre: String(row.clienteNombre ?? row.cliente_nombre ?? ''),
+    clienteDocumento: row.clienteDocumento != null || row.cliente_documento != null
+      ? String(row.clienteDocumento ?? row.cliente_documento)
+      : undefined,
+    total: row.total != null ? Number(row.total) : undefined,
+    cobrado: row.cobrado != null ? Number(row.cobrado) : undefined,
+    saldo: row.saldo != null ? Number(row.saldo) : undefined,
+    resumenProductos: row.resumenProductos != null || row.resumen_productos != null
+      ? String(row.resumenProductos ?? row.resumen_productos)
+      : undefined,
+    numeroComprobante: row.numeroComprobante != null || row.numero_comprobante != null
+      ? String(row.numeroComprobante ?? row.numero_comprobante)
+      : comprobante?.numero != null
+        ? String(comprobante.numero)
+        : null,
+    detalles: Array.isArray(row.detalles)
+      ? (row.detalles as Array<Record<string, unknown>>).map(mapLinea)
+      : undefined,
+    pagos: Array.isArray(row.pagos)
+      ? (row.pagos as Array<Record<string, unknown>>).map(mapPago)
+      : undefined,
+    comprobante: comprobante
+      ? {
+          numero: String(comprobante.numero ?? ''),
+          fechaEmision: String(comprobante.fechaEmision ?? comprobante.fecha_emision ?? ''),
+        }
+      : null,
   }
 }
 
@@ -43,13 +79,17 @@ export async function listarVentas(params?: {
   }
 }
 
+export async function obtenerVenta(id: string): Promise<Venta> {
+  const { data } = await api.get(`/api/ventas/${id}`)
+  return mapVenta(data.data as Record<string, unknown>)
+}
+
 export async function crearVenta(datos: {
   idCliente: string
   detalles: Array<{ idProducto: string; cantidad: number; precioUnitario?: number }>
-}): Promise<{ id: string }> {
+}): Promise<Venta> {
   const { data } = await api.post('/api/ventas', datos)
-  const row = data.data as Record<string, unknown>
-  return { id: String(row.idVenta ?? row.id_venta ?? row.id) }
+  return mapVenta(data.data as Record<string, unknown>)
 }
 
 export async function confirmarVenta(id: string, claveIdempotencia: string): Promise<void> {
@@ -87,4 +127,18 @@ export async function crearPagoEnLinea(
 
 export async function confirmarPago(idPago: string, claveIdempotencia: string): Promise<void> {
   await api.post(`/api/pagos/${idPago}/confirmar`, { claveIdempotencia })
+}
+
+export async function descargarComprobantePdf(id: string): Promise<void> {
+  const { data } = await api.get(`/api/ventas/${id}/comprobante`, {
+    params: { formato: 'pdf' },
+    responseType: 'blob',
+  })
+  const blob = data as Blob
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `comprobante-${id.slice(0, 8)}.pdf`
+  link.click()
+  URL.revokeObjectURL(url)
 }
