@@ -636,16 +636,22 @@ function PanelPagos({
 }) {
   const toast = useToast()
   const [pagos, setPagos] = useState<PagoVenta[]>([])
-  const [monto, setMonto] = useState('')
   const [metodo, setMetodo] = useState<'EFECTIVO' | 'EN_LINEA'>('EFECTIVO')
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const saldo = Number(venta.saldo ?? venta.total ?? 0)
-  const yaPagada = venta.estado === 'CONFIRMADA' && Number(venta.saldo ?? 0) <= 0
+  const [saldoActual, setSaldoActual] = useState(Number(venta.saldo ?? venta.total ?? 0))
+  const [totalActual, setTotalActual] = useState(Number(venta.total ?? 0))
+  const [cobradoActual, setCobradoActual] = useState(Number(venta.cobrado ?? 0))
+  const yaPagada = saldoActual <= 0 && venta.estado === 'CONFIRMADA'
 
   const cargar = useCallback(() => {
     listarPagosVenta(venta.id).then(setPagos).catch(() => setPagos([]))
+    obtenerVenta(venta.id).then((detalle) => {
+      setSaldoActual(Number(detalle.saldo ?? 0))
+      setTotalActual(Number(detalle.total ?? 0))
+      setCobradoActual(Number(detalle.cobrado ?? 0))
+    }).catch(() => undefined)
   }, [venta.id])
 
   useEffect(() => {
@@ -657,11 +663,18 @@ function PanelPagos({
     setOcupado(true)
     setError(null)
     setCheckoutUrl(null)
+    if (saldoActual <= 0) {
+      setError('No hay saldo pendiente.')
+      setOcupado(false)
+      return
+    }
     try {
+      // En mostrador se cobra el saldo completo; no se permiten pagos parciales.
+      const montoCompleto = Math.round(saldoActual * 100) / 100
       if (metodo === 'EN_LINEA') {
         const origin = window.location.origin
         const result = await crearPagoEnLinea(venta.id, {
-          monto: monto ? Number(monto) : undefined,
+          monto: montoCompleto,
           successUrl: `${origin}${ROUTES.pagosExito}?desde=ventas`,
           cancelUrl: `${origin}${ROUTES.pagosCancelado}?desde=ventas`,
         })
@@ -671,11 +684,10 @@ function PanelPagos({
         onChanged()
       } else {
         await registrarPagoVenta(venta.id, {
-          monto: Number(monto),
+          monto: montoCompleto,
           metodo: 'EFECTIVO',
         })
         toast.success('Efectivo recibido. Venta confirmada.')
-        setMonto('')
         cargar()
         onChanged()
       }
@@ -690,8 +702,8 @@ function PanelPagos({
     <Modal title={`Pagos — ${venta.clienteNombre || venta.id}`} onClose={onClose} busy={ocupado}>
       <div className="space-y-4">
         <p className="text-sm text-secundario">
-          Total {formatCurrency(Number(venta.total ?? 0))} · Cobrado {formatCurrency(Number(venta.cobrado ?? 0))} · Saldo{' '}
-          <strong className="text-tinta">{formatCurrency(saldo)}</strong>
+          Total {formatCurrency(totalActual)} · Cobrado {formatCurrency(cobradoActual)} · Saldo{' '}
+          <strong className="text-tinta">{formatCurrency(saldoActual)}</strong>
         </p>
 
         {pagos.length === 0 ? (
@@ -725,28 +737,26 @@ function PanelPagos({
           </ul>
         )}
 
-        {yaPagada ? (
+        {yaPagada || saldoActual <= 0 ? (
           <Alert variant="success" title="Venta pagada">
             No hay saldo pendiente. No se pueden generar más cobros.
           </Alert>
         ) : (
           <form onSubmit={registrar} className="space-y-3 border-t border-linea pt-4">
             {error && <p className="text-sm text-peligro">{error}</p>}
-            <Input
-              label={metodo === 'EN_LINEA' ? 'Monto (vacío = saldo completo)' : 'Monto'}
-              type="number"
-              min="0.01"
-              step="any"
-              required={metodo === 'EFECTIVO'}
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-            />
+            <div className="rounded-md border border-linea bg-suave px-3 py-2">
+              <p className="text-xs text-secundario">Monto a cobrar (saldo completo)</p>
+              <p className="font-mono text-lg font-semibold text-tinta">{formatCurrency(saldoActual)}</p>
+              <p className="mt-1 text-xs text-secundario">En mostrador no se aceptan pagos parciales.</p>
+            </div>
             <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value as 'EFECTIVO' | 'EN_LINEA')}>
               <option value="EFECTIVO">Efectivo</option>
               <option value="EN_LINEA">Tarjeta / QR (Stripe test)</option>
             </Select>
             <Button type="submit" loading={ocupado}>
-              {metodo === 'EN_LINEA' ? 'Generar link Stripe' : 'Registrar pago'}
+              {metodo === 'EN_LINEA'
+                ? `Generar link Stripe · ${formatCurrency(saldoActual)}`
+                : `Cobrar efectivo · ${formatCurrency(saldoActual)}`}
             </Button>
           </form>
         )}
