@@ -14,6 +14,9 @@ function mapVenta(row: Record<string, unknown>): Venta {
     estado: String(row.estado ?? ''),
     idCliente: String(row.idCliente ?? row.id_cliente ?? ''),
     clienteNombre: String(row.clienteNombre ?? row.cliente_nombre ?? ''),
+    total: row.total != null ? Number(row.total) : undefined,
+    cobrado: row.cobrado != null ? Number(row.cobrado) : undefined,
+    saldo: row.saldo != null ? Number(row.saldo) : undefined,
   }
 }
 

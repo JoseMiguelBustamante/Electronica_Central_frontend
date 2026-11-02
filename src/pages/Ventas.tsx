@@ -15,8 +15,8 @@ import type { EstadoCarga } from '../hooks/estadoCarga'
 import { useToast } from '../hooks/useToast'
 import { mensajeError } from '../lib/errors'
 import { claveIdempotencia } from '../lib/idempotency'
+import { listarProductosAdmin } from '../services/catalogoService'
 import { listarClientes } from '../services/clienteService'
-import { listarInventario } from '../services/inventarioService'
 import {
   anularVenta,
   confirmarPago,
@@ -28,14 +28,14 @@ import {
   registrarPagoVenta,
 } from '../services/ventaService'
 import { ROUTES } from '../utils/navigation'
-import type { Cliente, ItemInventario, PagoVenta, Venta } from '../types/domain'
+import type { Cliente, PagoVenta, ProductoAdmin, Venta } from '../types/domain'
 import { formatCurrency, formatDateTime } from '../utils/formatters'
 
 export default function Ventas() {
   const toast = useToast()
   const [items, setItems] = useState<Venta[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const [productos, setProductos] = useState<ItemInventario[]>([])
+  const [productos, setProductos] = useState<ProductoAdmin[]>([])
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
   const [intento, setIntento] = useState(0)
   const [filtroEstado, setFiltroEstado] = useState('')
@@ -52,13 +52,13 @@ export default function Ventas() {
     Promise.all([
       listarVentas({ estado: filtroEstado || undefined, limite: 50 }),
       listarClientes(),
-      listarInventario({ limite: 100 }),
+      listarProductosAdmin({ estado: 'activos', limite: 200 }),
     ]).then(
-      ([ventas, listaClientes, inv]) => {
+      ([ventas, listaClientes, catalogo]) => {
         if (!vigente) return
         setItems(ventas.items)
         setClientes(listaClientes)
-        setProductos(inv.items)
+        setProductos(catalogo.productos.filter((p) => p.stockActual > 0))
         setEstado('listo')
       },
       () => {
@@ -83,6 +83,20 @@ export default function Ventas() {
       cell: (row) => <Badge variant={row.estado === 'CONFIRMADA' ? 'success' : 'neutral'}>{row.estado}</Badge>,
     },
     {
+      key: 'saldo',
+      header: 'Saldo',
+      cell: (row) => {
+        if (row.estado !== 'CONFIRMADA') return '—'
+        const saldo = Number(row.saldo ?? 0)
+        return (
+          <span className={saldo === 0 ? 'text-disponible' : 'text-tinta'}>
+            {formatCurrency(saldo)}
+            {saldo === 0 ? ' · pagada' : ''}
+          </span>
+        )
+      },
+    },
+    {
       key: 'acciones',
       header: 'Acciones',
       cell: (row) => (
@@ -94,7 +108,7 @@ export default function Ventas() {
                 onClick={async () => {
                   try {
                     await confirmarVenta(row.id, claveIdempotencia('venta'))
-                    toast.success('Venta confirmada.')
+                    toast.success('Venta confirmada (stock reservado). Ahora cobrá en Pagos.')
                     recargar()
                   } catch (err) {
                     toast.error(mensajeError(err, 'No se pudo confirmar.'))
@@ -119,9 +133,14 @@ export default function Ventas() {
               </Button>
             </>
           )}
-          {row.estado === 'CONFIRMADA' && (
+          {row.estado === 'CONFIRMADA' && Number(row.saldo ?? 0) > 0 && (
             <Button variant="secondary" onClick={() => setPagoVenta(row)}>
-              Pagos
+              Cobrar
+            </Button>
+          )}
+          {row.estado === 'CONFIRMADA' && Number(row.saldo ?? 0) === 0 && (
+            <Button variant="secondary" onClick={() => setPagoVenta(row)}>
+              Ver pagos
             </Button>
           )}
         </div>
@@ -134,7 +153,9 @@ export default function Ventas() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-tinta">Ventas</h2>
-          <p className="mt-1 text-sm text-secundario">Borradores, confirmación, anulación y pagos (efectivo / Stripe).</p>
+          <p className="mt-1 text-sm text-secundario">
+            Cliente → producto (precio de catálogo) → confirmar → cobrar (efectivo / Stripe).
+          </p>
         </div>
         <Button onClick={() => setCreando(true)} disabled={clientes.length === 0}>
           <PlusIcon size={18} aria-hidden="true" />
@@ -180,7 +201,10 @@ export default function Ventas() {
       {pagoVenta && (
         <PanelPagos
           venta={pagoVenta}
-          onClose={() => setPagoVenta(null)}
+          onClose={() => {
+            setPagoVenta(null)
+            recargar()
+          }}
           onChanged={() => {
             toast.success('Pago actualizado.')
           }}
@@ -197,19 +221,20 @@ function FormularioVenta({
   onSubmit,
 }: {
   clientes: Cliente[]
-  productos: ItemInventario[]
+  productos: ProductoAdmin[]
   onClose: () => void
   onSubmit: (datos: {
     idCliente: string
-    detalles: Array<{ idProducto: string; cantidad: number; precioUnitario?: number }>
+    detalles: Array<{ idProducto: string; cantidad: number }>
   }) => Promise<void>
 }) {
   const [idCliente, setIdCliente] = useState(clientes[0]?.id ?? '')
-  const [idProducto, setIdProducto] = useState(productos[0]?.idProducto ?? '')
+  const [idProducto, setIdProducto] = useState(productos[0]?.id ?? '')
   const [cantidad, setCantidad] = useState('1')
-  const [precio, setPrecio] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
+
+  const producto = productos.find((p) => p.id === idProducto)
 
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
@@ -218,13 +243,7 @@ function FormularioVenta({
     try {
       await onSubmit({
         idCliente,
-        detalles: [
-          {
-            idProducto,
-            cantidad: Number(cantidad),
-            precioUnitario: precio === '' ? undefined : Number(precio),
-          },
-        ],
+        detalles: [{ idProducto, cantidad: Number(cantidad) }],
       })
     } catch (err) {
       setError(mensajeError(err, 'No se pudo crear la venta.'))
@@ -245,13 +264,19 @@ function FormularioVenta({
         </Select>
         <Select label="Producto" required value={idProducto} onChange={(e) => setIdProducto(e.target.value)}>
           {productos.map((p) => (
-            <option key={p.idProducto} value={p.idProducto}>
-              {p.codigo} — stock {p.stockActual}
+            <option key={p.id} value={p.id}>
+              {p.codigo} — {p.nombre} (stock {p.stockActual})
             </option>
           ))}
         </Select>
         <Input label="Cantidad" type="number" min="0.0001" step="any" required value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
-        <Input label="Precio unitario (opcional)" type="number" min="0" step="any" value={precio} onChange={(e) => setPrecio(e.target.value)} />
+        <p className="rounded-md border border-linea bg-suave px-3 py-2 text-sm text-secundario">
+          Precio unitario (catálogo):{' '}
+          <span className="font-mono font-semibold text-tinta">
+            {producto ? formatCurrency(producto.precioVenta) : '—'}
+          </span>
+          . No se edita aquí; sale de la base de datos.
+        </p>
       </form>
     </Modal>
   )
@@ -273,6 +298,8 @@ function PanelPagos({
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
+  const saldo = Number(venta.saldo ?? 0)
+  const yaPagada = saldo <= 0
 
   const cargar = useCallback(() => {
     listarPagosVenta(venta.id).then(setPagos).catch(() => setPagos([]))
@@ -296,7 +323,7 @@ function PanelPagos({
           cancelUrl: `${origin}${ROUTES.pagosCancelado}?desde=ventas`,
         })
         setCheckoutUrl(result.urlPago)
-        toast.success('Link de pago listo. Abrí Checkout (misma pestaña) o mostrá el QR.')
+        toast.success('Link de pago listo. Abrí Checkout o mostrá el QR.')
         cargar()
         onChanged()
       } else {
@@ -318,6 +345,11 @@ function PanelPagos({
   return (
     <Modal title={`Pagos — ${venta.clienteNombre || venta.id}`} onClose={onClose} busy={ocupado}>
       <div className="space-y-4">
+        <p className="text-sm text-secundario">
+          Total {formatCurrency(Number(venta.total ?? 0))} · Cobrado {formatCurrency(Number(venta.cobrado ?? 0))} · Saldo{' '}
+          <strong className="text-tinta">{formatCurrency(saldo)}</strong>
+        </p>
+
         {pagos.length === 0 ? (
           <p className="text-sm text-secundario">Sin pagos registrados.</p>
         ) : (
@@ -349,25 +381,31 @@ function PanelPagos({
           </ul>
         )}
 
-        <form onSubmit={registrar} className="space-y-3 border-t border-linea pt-4">
-          {error && <p className="text-sm text-peligro">{error}</p>}
-          <Input
-            label={metodo === 'EN_LINEA' ? 'Monto (vacío = saldo completo)' : 'Monto'}
-            type="number"
-            min="0.01"
-            step="any"
-            required={metodo === 'EFECTIVO'}
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-          />
-          <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value as 'EFECTIVO' | 'EN_LINEA')}>
-            <option value="EFECTIVO">Efectivo</option>
-            <option value="EN_LINEA">Tarjeta / QR (Stripe test)</option>
-          </Select>
-          <Button type="submit" loading={ocupado}>
-            {metodo === 'EN_LINEA' ? 'Generar link Stripe' : 'Registrar pago'}
-          </Button>
-        </form>
+        {yaPagada ? (
+          <Alert variant="success" title="Venta pagada">
+            No hay saldo pendiente. No se pueden generar más cobros.
+          </Alert>
+        ) : (
+          <form onSubmit={registrar} className="space-y-3 border-t border-linea pt-4">
+            {error && <p className="text-sm text-peligro">{error}</p>}
+            <Input
+              label={metodo === 'EN_LINEA' ? 'Monto (vacío = saldo completo)' : 'Monto'}
+              type="number"
+              min="0.01"
+              step="any"
+              required={metodo === 'EFECTIVO'}
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+            />
+            <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value as 'EFECTIVO' | 'EN_LINEA')}>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="EN_LINEA">Tarjeta / QR (Stripe test)</option>
+            </Select>
+            <Button type="submit" loading={ocupado}>
+              {metodo === 'EN_LINEA' ? 'Generar link Stripe' : 'Registrar pago'}
+            </Button>
+          </form>
+        )}
 
         {checkoutUrl && (
           <div className="space-y-3 rounded-md border border-linea bg-suave p-3">

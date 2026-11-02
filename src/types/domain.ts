@@ -200,6 +200,9 @@ export interface Venta {
   estado: string
   idCliente: string
   clienteNombre: string
+  total?: number
+  cobrado?: number
+  saldo?: number
 }
 
 export interface SolicitudProducto {
