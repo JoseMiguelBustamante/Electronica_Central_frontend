@@ -69,6 +69,19 @@ export async function registrarPagoVenta(
   await api.post(`/api/ventas/${id}/pagos`, datos)
 }
 
+/** Contrato de la rama del compañero: POST .../pagos/en-linea → urlPago */
+export async function crearPagoEnLinea(
+  id: string,
+  datos?: { monto?: number; successUrl?: string; cancelUrl?: string },
+): Promise<{ urlPago: string; idPago: string }> {
+  const { data } = await api.post(`/api/ventas/${id}/pagos/en-linea`, datos ?? {})
+  const row = data.data as Record<string, unknown>
+  return {
+    urlPago: String(row.urlPago ?? row.url ?? ''),
+    idPago: String(row.idPago ?? row.id_pago ?? ''),
+  }
+}
+
 export async function confirmarPago(idPago: string, claveIdempotencia: string): Promise<void> {
   await api.post(`/api/pagos/${idPago}/confirmar`, { claveIdempotencia })
 }

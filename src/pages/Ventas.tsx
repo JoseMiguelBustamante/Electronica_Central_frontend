@@ -21,11 +21,13 @@ import {
   anularVenta,
   confirmarPago,
   confirmarVenta,
+  crearPagoEnLinea,
   crearVenta,
   listarPagosVenta,
   listarVentas,
   registrarPagoVenta,
 } from '../services/ventaService'
+import { ROUTES } from '../utils/navigation'
 import type { Cliente, ItemInventario, PagoVenta, Venta } from '../types/domain'
 import { formatCurrency, formatDateTime } from '../utils/formatters'
 
@@ -267,8 +269,8 @@ function PanelPagos({
   const toast = useToast()
   const [pagos, setPagos] = useState<PagoVenta[]>([])
   const [monto, setMonto] = useState('')
-  const [metodo, setMetodo] = useState<'EFECTIVO' | 'QR'>('EFECTIVO')
-  const [referencia, setReferencia] = useState('')
+  const [metodo, setMetodo] = useState<'EFECTIVO' | 'EN_LINEA'>('EFECTIVO')
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -284,16 +286,28 @@ function PanelPagos({
     event.preventDefault()
     setOcupado(true)
     setError(null)
+    setCheckoutUrl(null)
     try {
-      await registrarPagoVenta(venta.id, {
-        monto: Number(monto),
-        metodo,
-        referenciaExterna: referencia || undefined,
-      })
-      setMonto('')
-      setReferencia('')
-      cargar()
-      onChanged()
+      if (metodo === 'EN_LINEA') {
+        const origin = window.location.origin
+        const result = await crearPagoEnLinea(venta.id, {
+          monto: monto ? Number(monto) : undefined,
+          successUrl: `${origin}${ROUTES.ventas}?pago=ok`,
+          cancelUrl: `${origin}${ROUTES.ventas}?pago=cancel`,
+        })
+        setCheckoutUrl(result.urlPago)
+        toast.success('Link de pago listo. Abrí Checkout o mostrá el QR al cliente.')
+        cargar()
+        onChanged()
+      } else {
+        await registrarPagoVenta(venta.id, {
+          monto: Number(monto),
+          metodo: 'EFECTIVO',
+        })
+        setMonto('')
+        cargar()
+        onChanged()
+      }
       setOcupado(false)
     } catch (err) {
       setError(mensajeError(err, 'No se pudo registrar el pago.'))
@@ -313,7 +327,7 @@ function PanelPagos({
                 <span>
                   {formatCurrency(pago.monto)} · {pago.metodo} · {pago.estado}
                 </span>
-                {pago.estado !== 'CONFIRMADO' && (
+                {pago.estado === 'PENDIENTE' && pago.metodo !== 'EN_LINEA' && (
                   <Button
                     variant="secondary"
                     onClick={async () => {
@@ -337,18 +351,45 @@ function PanelPagos({
 
         <form onSubmit={registrar} className="space-y-3 border-t border-linea pt-4">
           {error && <p className="text-sm text-peligro">{error}</p>}
-          <Input label="Monto" type="number" min="0.01" step="any" required value={monto} onChange={(e) => setMonto(e.target.value)} />
-          <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value as 'EFECTIVO' | 'QR')}>
+          <Input
+            label={metodo === 'EN_LINEA' ? 'Monto (vacío = saldo completo)' : 'Monto'}
+            type="number"
+            min="0.01"
+            step="any"
+            required={metodo === 'EFECTIVO'}
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+          />
+          <Select label="Método" value={metodo} onChange={(e) => setMetodo(e.target.value as 'EFECTIVO' | 'EN_LINEA')}>
             <option value="EFECTIVO">Efectivo</option>
-            <option value="QR">QR</option>
+            <option value="EN_LINEA">Tarjeta / QR (Stripe test)</option>
           </Select>
-          {metodo === 'QR' && (
-            <Input label="Referencia externa" value={referencia} onChange={(e) => setReferencia(e.target.value)} />
-          )}
           <Button type="submit" loading={ocupado}>
-            Registrar pago
+            {metodo === 'EN_LINEA' ? 'Generar link Stripe' : 'Registrar pago'}
           </Button>
         </form>
+
+        {checkoutUrl && (
+          <div className="space-y-3 rounded-md border border-linea bg-suave p-3">
+            <p className="text-sm text-tinta">Link de pago (modo test). El webhook confirma automáticamente.</p>
+            <img
+              alt="QR Stripe Checkout"
+              className="mx-auto size-44 rounded-md bg-white p-2"
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(checkoutUrl)}`}
+            />
+            <a
+              href={checkoutUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block break-all text-sm text-mascara underline"
+            >
+              {checkoutUrl}
+            </a>
+            <Button onClick={() => window.open(checkoutUrl, '_blank', 'noopener,noreferrer')}>
+              Abrir Checkout
+            </Button>
+          </div>
+        )}
       </div>
     </Modal>
   )
