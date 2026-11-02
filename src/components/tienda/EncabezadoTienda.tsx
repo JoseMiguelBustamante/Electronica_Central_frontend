@@ -333,12 +333,15 @@ function NavLinkItem({
 }
 
 function Carrito() {
-  const { lineCount, unitCount } = useCart()
+  const { lineCount, unitCount, toggleDrawer, drawerOpen } = useCart()
   const etiqueta = `${lineCount === 1 ? '1 producto' : `${lineCount} productos`} · ${unitCount === 1 ? '1 unidad' : `${unitCount} unidades`}`
 
   return (
-    <Link
-      to={ROUTES.carrito}
+    <button
+      type="button"
+      onClick={toggleDrawer}
+      aria-expanded={drawerOpen}
+      aria-haspopup="dialog"
       className={`relative grid size-10 place-items-center text-tinta transition duration-200 hover:text-mascara ${FOCUS_RING}`}
       aria-label={`Carrito, ${etiqueta}`}
       title={etiqueta}
@@ -347,7 +350,7 @@ function Carrito() {
       <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white transition duration-200">
         {unitCount > 99 ? '99+' : unitCount}
       </span>
-    </Link>
+    </button>
   )
 }
 

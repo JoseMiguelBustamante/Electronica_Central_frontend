@@ -2,7 +2,8 @@ import { createContext } from 'react'
 
 export interface ToastAction {
   label: string
-  to: string
+  to?: string
+  onClick?: () => void
 }
 
 export interface ToastOptions {

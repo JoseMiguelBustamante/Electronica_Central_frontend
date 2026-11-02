@@ -33,7 +33,7 @@ export default function DetallePublico() {
   const [cantidad, setCantidad] = useState('1')
   const [aviso, setAviso] = useState<string | null>(null)
   const [avisoError, setAvisoError] = useState<string | null>(null)
-  const { addItem } = useCart()
+  const { addItem, openDrawer } = useCart()
   const toast = useToast()
   const conSesion = Boolean(leerToken())
 
@@ -95,7 +95,7 @@ export default function DetallePublico() {
     setAviso(COMPRA.fichaAgregado)
     toast.success(
       `Agregaste ${unidades} × ${producto.codigo}. Ahora tienes ${totalLinea}.`,
-      { action: { label: 'Ver carrito', to: ROUTES.carrito } },
+      { action: { label: 'Ver carrito', onClick: openDrawer } },
     )
   }
 

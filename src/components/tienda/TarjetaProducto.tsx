@@ -7,7 +7,6 @@ import { useCart } from '../../hooks/useCart'
 import { useToast } from '../../hooks/useToast'
 import type { ProductoPublico } from '../../services/catalogoService'
 import { formatPrecioMostrador } from '../../utils/formatters'
-import { ROUTES } from '../../utils/navigation'
 import { FOCUS_RING, cn } from '../../utils/styles'
 
 interface TarjetaProductoProps {
@@ -34,7 +33,7 @@ function formatearCantidad(valor: number): string {
 export default function TarjetaProducto({ producto, guardado, vista, onGuardar }: TarjetaProductoProps) {
   const enLista = vista === 'lista'
   const toast = useToast()
-  const { addItem, quantityOf } = useCart()
+  const { addItem, quantityOf, openDrawer } = useCart()
   const ubicacion = useLocation()
   const fromCatalog = `${ubicacion.pathname}${ubicacion.search}`
   const enCarrito = quantityOf(producto.id)
@@ -62,9 +61,10 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
     })
     setDestacado(true)
     window.setTimeout(() => setDestacado(false), 280)
+    openDrawer()
     toast.success(
       `Agregaste ${formatearCantidad(agregadas)} × ${producto.codigo}. Ahora tienes ${formatearCantidad(totalLinea)}.`,
-      { action: { label: 'Ver carrito', to: ROUTES.carrito } },
+      { action: { label: 'Ver carrito', onClick: openDrawer } },
     )
   }
 

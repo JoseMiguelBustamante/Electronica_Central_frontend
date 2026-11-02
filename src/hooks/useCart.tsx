@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
@@ -65,6 +66,10 @@ interface CartContextValue {
   lineCount: number
   unitCount: number
   total: number
+  drawerOpen: boolean
+  openDrawer: () => void
+  closeDrawer: () => void
+  toggleDrawer: () => void
   quantityOf: (id: string) => number
   addItem: (item: Omit<CartItem, 'cantidad'> & { cantidad?: number }) => number
   setQuantity: (id: string, cantidad: number) => void
@@ -76,6 +81,11 @@ const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const items = useSyncExternalStore(subscribeCart, getCartSnapshot, getServerSnapshot)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const openDrawer = useCallback(() => setDrawerOpen(true), [])
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  const toggleDrawer = useCallback(() => setDrawerOpen((v) => !v), [])
 
   const quantityOf = useCallback((id: string) => {
     const row = items.find((item) => item.id === id)
@@ -138,12 +148,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     lineCount: cartLineCount(items),
     unitCount: cartUnitCount(items),
     total: cartTotal(items),
+    drawerOpen,
+    openDrawer,
+    closeDrawer,
+    toggleDrawer,
     quantityOf,
     addItem,
     setQuantity,
     removeItem,
     clear,
-  }), [items, quantityOf, addItem, setQuantity, removeItem, clear])
+  }), [items, drawerOpen, openDrawer, closeDrawer, toggleDrawer, quantityOf, addItem, setQuantity, removeItem, clear])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

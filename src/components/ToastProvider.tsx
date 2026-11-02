@@ -88,13 +88,26 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{toast.message}</p>
                 {toast.action && (
-                  <Link
-                    to={toast.action.to}
-                    onClick={() => dismiss(toast.id)}
-                    className={`mt-1 inline-block text-sm font-semibold text-mascara hover:underline ${FOCUS_RING}`}
-                  >
-                    {toast.action.label}
-                  </Link>
+                  toast.action.to ? (
+                    <Link
+                      to={toast.action.to}
+                      onClick={() => dismiss(toast.id)}
+                      className={`mt-1 inline-block text-sm font-semibold text-mascara hover:underline ${FOCUS_RING}`}
+                    >
+                      {toast.action.label}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toast.action?.onClick?.()
+                        dismiss(toast.id)
+                      }}
+                      className={`mt-1 text-sm font-semibold text-mascara hover:underline ${FOCUS_RING}`}
+                    >
+                      {toast.action.label}
+                    </button>
+                  )
                 )}
               </div>
               <IconButton

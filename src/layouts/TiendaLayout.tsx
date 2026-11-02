@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import EncabezadoTienda from '../components/tienda/EncabezadoTienda'
+import PanelCarrito from '../components/tienda/PanelCarrito'
 import PieTienda from '../components/tienda/PieTienda'
 import { CartProvider } from '../hooks/useCart'
 
@@ -40,6 +41,7 @@ export default function TiendaLayout() {
           <Outlet />
         </main>
         <PieTienda />
+        <PanelCarrito />
       </div>
     </CartProvider>
   )
