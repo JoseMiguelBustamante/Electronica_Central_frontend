@@ -4,8 +4,8 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import {
   CaretDownIcon,
   ClockIcon,
-  CubeIcon,
-  EnvelopeSimpleIcon,
+  HeartIcon,
+  InfoIcon,
   MagnifyingGlassIcon,
   ShoppingCartIcon,
   SquaresFourIcon,
@@ -13,21 +13,15 @@ import {
   UserIcon,
 } from '@phosphor-icons/react'
 import { useClickOutside } from '../../hooks/useClickOutside'
+import { useCart } from '../../hooks/useCart'
+import { cantidadFavoritos } from '../../lib/favoritosStorage'
 import { borrarToken, leerToken } from '../../lib/session'
 import { obtenerSesion } from '../../services/authService'
-import { listarCatalogoPublico, type ProductoPublico } from '../../services/catalogoService'
+import { listarCatalogoPublico, listarFiltrosPublicos, type OpcionFiltro, type ProductoPublico } from '../../services/catalogoService'
 import type { SesionUsuario } from '../../types/domain'
-import { useCart } from '../../hooks/useCart'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
-import { FOCUS_RING, cn } from '../../utils/styles'
 import { formatPrecioMostrador } from '../../utils/formatters'
-
-const ENLACES = [
-  { etiqueta: 'Catálogo', to: ROUTES.catalogo, icono: SquaresFourIcon },
-  { etiqueta: 'Categorías', to: `${ROUTES.catalogo}#categoria`, icono: TagIcon },
-  { etiqueta: 'Marcas', to: `${ROUTES.catalogo}#marca`, icono: CubeIcon },
-  { etiqueta: 'Contacto', to: `${ROUTES.catalogo}#contacto`, icono: EnvelopeSimpleIcon },
-] as const
+import { FOCUS_RING, cn } from '../../utils/styles'
 
 export default function EncabezadoTienda() {
   const navigate = useNavigate()
@@ -35,14 +29,37 @@ export default function EncabezadoTienda() {
   const [params] = useSearchParams()
   const busquedaId = useId()
   const menuRef = useRef<HTMLDivElement>(null)
+  const catsRef = useRef<HTMLDivElement>(null)
   const [texto, setTexto] = useState(params.get('buscar') ?? '')
   const [sugerencias, setSugerencias] = useState<ProductoPublico[]>([])
   const [abierto, setAbierto] = useState(false)
   const [menuCuenta, setMenuCuenta] = useState(false)
+  const [menuCats, setMenuCats] = useState(false)
+  const [categorias, setCategorias] = useState<OpcionFiltro[]>([])
+  const [favoritosN, setFavoritosN] = useState(0)
   const [usuario, setUsuario] = useState<SesionUsuario | null>(null)
   const conSesion = Boolean(leerToken())
   const cerrarMenu = useCallback(() => setMenuCuenta(false), [])
+  const cerrarCats = useCallback(() => setMenuCats(false), [])
   useClickOutside(menuRef, menuCuenta, cerrarMenu)
+  useClickOutside(catsRef, menuCats, cerrarCats)
+
+  useEffect(() => {
+    listarFiltrosPublicos()
+      .then((f) => setCategorias(f.categorias))
+      .catch(() => setCategorias([]))
+  }, [])
+
+  useEffect(() => {
+    setFavoritosN(cantidadFavoritos())
+    const sync = () => setFavoritosN(cantidadFavoritos())
+    window.addEventListener('storage', sync)
+    window.addEventListener('eca-favoritos', sync)
+    return () => {
+      window.removeEventListener('storage', sync)
+      window.removeEventListener('eca-favoritos', sync)
+    }
+  }, [ubicacion.pathname])
 
   useEffect(() => {
     if (!conSesion) {
@@ -83,17 +100,10 @@ export default function EncabezadoTienda() {
 
   const buscar = (valor: string) => {
     const consulta = valor.trim()
-    const siguientes = new URLSearchParams(params)
+    const siguientes = new URLSearchParams()
     if (consulta) siguientes.set('buscar', consulta)
-    else siguientes.delete('buscar')
-    siguientes.delete('pagina')
     setAbierto(false)
     navigate({ pathname: ROUTES.catalogo, search: siguientes.toString() })
-  }
-
-  const activo = (to: string) => {
-    if (to === ROUTES.catalogo) return ubicacion.pathname === ROUTES.catalogo && !ubicacion.hash
-    return ubicacion.hash === to.slice(to.indexOf('#'))
   }
 
   return (
@@ -112,14 +122,26 @@ export default function EncabezadoTienda() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-3 lg:col-start-3">
-          <p className="hidden items-start gap-2 text-xs leading-4 text-secundario lg:flex">
+        <div className="flex items-center gap-2 sm:gap-3 lg:col-start-3">
+          <p className="hidden items-start gap-2 text-xs leading-4 text-secundario xl:flex">
             <ClockIcon size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
             <span>
               Lun - Sáb
               <span className="block">08:00-12:00 y 13:30-17:00</span>
             </span>
           </p>
+          <Link
+            to={ROUTES.favoritos}
+            className={`relative grid size-10 place-items-center text-tinta hover:text-mascara ${FOCUS_RING}`}
+            aria-label={`Favoritos, ${favoritosN}`}
+          >
+            <HeartIcon size={22} aria-hidden="true" />
+            {favoritosN > 0 && (
+              <span className="absolute top-1 right-0 grid min-w-4 place-items-center rounded-full bg-mascara px-1 text-[10px] font-semibold text-white">
+                {favoritosN > 99 ? '99+' : favoritosN}
+              </span>
+            )}
+          </Link>
           <Cuenta
             menuRef={menuRef}
             abierto={menuCuenta}
@@ -172,13 +194,27 @@ export default function EncabezadoTienda() {
           {abierto && texto.trim().length >= 2 && (
             <div className="absolute top-12 right-0 left-0 z-20 rounded-lg border border-linea bg-white shadow-sm">
               {sugerencias.length === 0 ? (
-                <p className="px-3 py-3 text-sm text-secundario">Sin coincidencias en el catálogo.</p>
+                <div className="space-y-2 px-3 py-3 text-sm">
+                  <p className="text-secundario">Sin coincidencias en el catálogo.</p>
+                  <button
+                    type="button"
+                    className={`font-semibold text-mascara ${FOCUS_RING}`}
+                    onClick={() => {
+                      setTexto('')
+                      setAbierto(false)
+                      navigate(ROUTES.catalogo)
+                    }}
+                  >
+                    Ver todo el catálogo
+                  </button>
+                </div>
               ) : (
                 <ul>
                   {sugerencias.map((producto) => (
                     <li key={producto.id}>
                       <Link
                         to={`/catalogo/${producto.id}`}
+                        state={{ fromCatalog: `${ubicacion.pathname}${ubicacion.search}` }}
                         onClick={() => setAbierto(false)}
                         className={`flex items-baseline justify-between gap-3 px-3 py-2.5 text-sm hover:bg-suave ${FOCUS_RING}`}
                       >
@@ -198,27 +234,101 @@ export default function EncabezadoTienda() {
       </div>
 
       <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tienda">
-        {ENLACES.map((enlace) => {
-          const Icono = enlace.icono
-          const esActivo = activo(enlace.to)
-          return (
-            <Link
-              key={enlace.etiqueta}
-              to={enlace.to}
-              aria-current={esActivo ? 'page' : undefined}
-              className={cn(
-                'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
-                esActivo ? 'border-mascara text-mascara' : 'border-transparent text-secundario hover:text-tinta',
-                FOCUS_RING,
+        <NavLinkItem
+          to={ROUTES.catalogo}
+          activo={ubicacion.pathname === ROUTES.catalogo && !ubicacion.hash && !params.get('categoria')}
+          icono={SquaresFourIcon}
+          etiqueta="Catálogo"
+        />
+
+        <div className="relative" ref={catsRef}>
+          <button
+            type="button"
+            aria-expanded={menuCats}
+            aria-haspopup="menu"
+            onClick={() => setMenuCats((v) => !v)}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
+              menuCats || params.get('categoria')
+                ? 'border-mascara text-mascara'
+                : 'border-transparent text-secundario hover:text-tinta',
+              FOCUS_RING,
+            )}
+          >
+            <TagIcon size={16} aria-hidden="true" />
+            Categorías
+            <CaretDownIcon size={12} aria-hidden="true" />
+          </button>
+          {menuCats && (
+            <div role="menu" className="absolute top-full left-0 z-30 mt-0 min-w-56 rounded-lg border border-linea bg-white py-1 shadow-sm">
+              <Link
+                role="menuitem"
+                to={ROUTES.catalogo}
+                onClick={() => setMenuCats(false)}
+                className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}
+              >
+                Todas las categorías
+              </Link>
+              {categorias.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-secundario">Sin categorías cargadas.</p>
+              ) : (
+                categorias.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    role="menuitem"
+                    to={`${ROUTES.catalogo}?categoria=${encodeURIComponent(cat.id)}`}
+                    onClick={() => setMenuCats(false)}
+                    className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}
+                  >
+                    {cat.nombre}
+                  </Link>
+                ))
               )}
-            >
-              <Icono size={16} aria-hidden="true" />
-              {enlace.etiqueta}
-            </Link>
-          )
-        })}
+            </div>
+          )}
+        </div>
+
+        <NavLinkItem
+          to={ROUTES.comoComprar}
+          activo={ubicacion.pathname === ROUTES.comoComprar}
+          icono={InfoIcon}
+          etiqueta="Cómo comprar"
+        />
+        <NavLinkItem
+          to={`${ROUTES.catalogo}#contacto`}
+          activo={ubicacion.hash === '#contacto'}
+          icono={ClockIcon}
+          etiqueta="Contacto"
+        />
       </nav>
     </header>
+  )
+}
+
+function NavLinkItem({
+  to,
+  activo,
+  icono: Icono,
+  etiqueta,
+}: {
+  to: string
+  activo: boolean
+  icono: typeof SquaresFourIcon
+  etiqueta: string
+}) {
+  return (
+    <Link
+      to={to}
+      aria-current={activo ? 'page' : undefined}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
+        activo ? 'border-mascara text-mascara' : 'border-transparent text-secundario hover:text-tinta',
+        FOCUS_RING,
+      )}
+    >
+      <Icono size={16} aria-hidden="true" />
+      {etiqueta}
+    </Link>
   )
 }
 
@@ -273,7 +383,7 @@ function Cuenta({
         <CaretDownIcon size={12} className="shrink-0" aria-hidden="true" />
       </button>
       {abierto && (
-        <div role="menu" className="absolute top-9 right-0 z-30 w-48 rounded-lg border border-linea bg-white py-1 shadow-sm">
+        <div role="menu" className="absolute top-9 right-0 z-30 w-52 rounded-lg border border-linea bg-white py-1 shadow-sm">
           {conSesion ? (
             <>
               {nombre && (
@@ -283,6 +393,9 @@ function Cuenta({
               )}
               <Link role="menuitem" to={ROUTES.misSolicitudes} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
                 Mis solicitudes
+              </Link>
+              <Link role="menuitem" to={ROUTES.favoritos} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                Favoritos
               </Link>
               <Link role="menuitem" to={ROUTES.dashboard} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
                 Panel

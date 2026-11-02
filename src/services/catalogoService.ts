@@ -127,6 +127,7 @@ export interface ProductoPublico {
   nombre: string
   descripcion: string
   precio: number
+  idCategoria: string
   categoria: string
   marca: string
   modelo: string
@@ -158,6 +159,8 @@ interface ProductoPublicoApi {
   nombre: string
   descripcion: string | null
   precio_venta: number | string
+  id_categoria?: string | null
+  idCategoria?: string | null
   categoria: string | null
   marca: string | null
   modelo: string | null
@@ -178,6 +181,7 @@ function mapearProductoPublico(row: ProductoPublicoApi): ProductoPublico {
     nombre: row.nombre,
     descripcion: row.descripcion?.trim() ?? '',
     precio: Number(row.precio_venta),
+    idCategoria: String(row.id_categoria ?? row.idCategoria ?? ''),
     categoria: row.categoria?.trim() || 'Sin categoría',
     marca: row.marca?.trim() || 'Sin marca',
     modelo: row.modelo?.trim() || '',

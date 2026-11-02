@@ -8,6 +8,7 @@ import { useCart } from '../hooks/useCart'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
 import { crearCheckoutStripeCarrito } from '../services/pagoStripeService'
+import { COMPRA } from '../lib/compraMensajes'
 import { formatCurrency } from '../utils/formatters'
 import { ROUTES } from '../utils/navigation'
 import { FOCUS_RING } from '../utils/styles'
@@ -59,7 +60,7 @@ export default function Carrito() {
       <EmptyState
         icon={ShoppingCartIcon}
         title="Carrito vacío"
-        description="Agregá productos desde el catálogo y pagá online con Stripe (modo test, BOB)."
+        description={COMPRA.carritoVacio}
         action={(
           <Link to={ROUTES.catalogo} className={`inline-flex ${FOCUS_RING}`}>
             <Button>Ir al catálogo</Button>
@@ -86,9 +87,7 @@ export default function Carrito() {
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-tinta">Carrito</h1>
-        <p className="mt-1 text-sm text-secundario">
-          Revisá tu pedido y pagá con Stripe Checkout en bolivianos (modo test).
-        </p>
+        <p className="mt-1 text-sm text-secundario">{COMPRA.carritoResumen}</p>
       </header>
 
       {avisoPago === 'cancel' && (

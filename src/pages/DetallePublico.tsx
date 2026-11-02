@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import Alert from '../components/Alert'
 import Button from '../components/Button'
 import LoadingState, { Skeleton } from '../components/LoadingState'
 import Disponibilidad from '../components/tienda/Disponibilidad'
 import ImagenProducto from '../components/tienda/ImagenProducto'
 import { useCart } from '../hooks/useCart'
+import { COMPRA } from '../lib/compraMensajes'
 import { mensajeError } from '../lib/errors'
 import { leerToken } from '../lib/session'
 import {
@@ -21,6 +22,8 @@ import { FOCUS_RING } from '../utils/styles'
 export default function DetallePublico() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const ubicacion = useLocation()
+  const fromCatalog = (ubicacion.state as { fromCatalog?: string } | null)?.fromCatalog ?? ROUTES.catalogo
   const [producto, setProducto] = useState<ProductoPublico | null>(null)
   const [relacionados, setRelacionados] = useState<ProductoPublico[]>([])
   const [cargando, setCargando] = useState(true)
@@ -43,9 +46,20 @@ export default function DetallePublico() {
       .then(async (detalle) => {
         if (!vigente) return
         setProducto(detalle)
-        const pagina = await listarCatalogoPublico({ limite: 8, pagina: 1 })
+        const pagina = await listarCatalogoPublico({
+          idCategoria: detalle.idCategoria || undefined,
+          limite: 8,
+          pagina: 1,
+        })
         if (!vigente) return
-        setRelacionados(pagina.productos.filter((item) => item.id !== detalle.id).slice(0, 4))
+        const mismos = pagina.productos.filter((item) => item.id !== detalle.id)
+        if (mismos.length > 0) {
+          setRelacionados(mismos.slice(0, 4))
+        } else {
+          const fallback = await listarCatalogoPublico({ limite: 8, pagina: 1 })
+          if (!vigente) return
+          setRelacionados(fallback.productos.filter((item) => item.id !== detalle.id).slice(0, 4))
+        }
       })
       .catch((causa) => {
         if (!vigente) return
@@ -76,7 +90,7 @@ export default function DetallePublico() {
       disponibilidad: producto.disponibilidad,
       cantidad: unidades,
     })
-    setAviso('Agregado al carrito. El pago online todavía no está disponible: confirmás el pedido y cobrás en tienda.')
+    setAviso(COMPRA.fichaAgregado)
   }
 
   if (cargando) {
@@ -104,13 +118,18 @@ export default function DetallePublico() {
     )
   }
 
-  const volver = `/catalogo/${producto.id}`
+  const volverLogin = `/catalogo/${producto.id}`
+  const subtitulo =
+    producto.descripcion.trim()
+    && producto.descripcion.trim().toLowerCase() !== producto.nombre.toLowerCase()
+      ? producto.descripcion
+      : null
 
   return (
     <div>
       <nav className="text-sm text-secundario" aria-label="Miga de pan">
-        <Link to={ROUTES.catalogo} className={`hover:text-mascara ${FOCUS_RING}`}>
-          Catálogo
+        <Link to={fromCatalog} className={`hover:text-mascara ${FOCUS_RING}`}>
+          Volver al catálogo
         </Link>
         <span className="mx-2" aria-hidden="true">
           /
@@ -133,15 +152,19 @@ export default function DetallePublico() {
           <h1 className="text-3xl font-semibold text-tinta">{producto.nombre}</h1>
           <p className="mt-2 font-mono text-sm text-secundario">{producto.codigo}</p>
           <p className="mt-1 text-sm text-secundario">
-            {producto.marca}
+            {producto.marca !== 'Sin marca' ? producto.marca : 'Marca no registrada'}
             {producto.modelo ? ` · ${producto.modelo}` : ''}
           </p>
           <p className="mt-4 font-mono text-3xl text-cobre">{formatCurrency(producto.precio)}</p>
           <div className="mt-3">
             <Disponibilidad valor={producto.disponibilidad} />
           </div>
-          {producto.descripcion && (
-            <p className="mt-5 text-sm leading-6 text-tinta">{producto.descripcion}</p>
+          {subtitulo ? (
+            <p className="mt-5 text-sm leading-6 text-tinta">{subtitulo}</p>
+          ) : (
+            <p className="mt-5 text-sm leading-6 text-secundario">
+              Ficha técnica incompleta en catálogo. Consultá en tienda encapsulado, características eléctricas u hoja de datos.
+            </p>
           )}
           {producto.compatibilidades.length > 0 && (
             <section className="mt-5" aria-labelledby="titulo-compatibles">
@@ -189,13 +212,15 @@ export default function DetallePublico() {
                 </Button>
               </div>
               <p className="text-xs text-secundario">
-                Podés armar el carrito sin cuenta. Para confirmar el pedido hace falta ingresar; el pago online viene después.
+                {COMPRA.fichaPago}
                 {!conSesion && (
                   <>
                     {' '}
-                    <Link to={`${ROUTES.login}?volver=${encodeURIComponent(volver)}`} className={`font-semibold text-mascara ${FOCUS_RING}`}>
+                    <Link to={`${ROUTES.login}?volver=${encodeURIComponent(volverLogin)}`} className={`font-semibold text-mascara ${FOCUS_RING}`}>
                       Ingresar
                     </Link>
+                    {' '}
+                    para pagar online.
                   </>
                 )}
               </p>
@@ -206,12 +231,15 @@ export default function DetallePublico() {
 
       {relacionados.length > 0 && (
         <section className="mt-12">
-          <h2 className="text-lg font-semibold text-tinta">Otros productos del catálogo</h2>
+          <h2 className="text-lg font-semibold text-tinta">
+            {producto.idCategoria ? `Más de ${producto.categoria}` : 'Otros productos del catálogo'}
+          </h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {relacionados.map((item) => (
               <li key={item.id}>
                 <Link
                   to={`/catalogo/${item.id}`}
+                  state={{ fromCatalog }}
                   className={`block rounded-lg border border-linea bg-superficie p-4 hover:border-mascara ${FOCUS_RING}`}
                 >
                   <p className="font-semibold text-tinta">{item.nombre}</p>

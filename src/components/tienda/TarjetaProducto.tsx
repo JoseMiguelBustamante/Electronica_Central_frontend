@@ -1,5 +1,5 @@
 import { HeartIcon, ShoppingCartIcon } from '@phosphor-icons/react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Disponibilidad from './Disponibilidad'
 import ImagenProducto from './ImagenProducto'
 import { useCart } from '../../hooks/useCart'
@@ -14,9 +14,21 @@ interface TarjetaProductoProps {
   onGuardar: (id: string) => void
 }
 
+function lineaSecundaria(producto: ProductoPublico): string {
+  const desc = producto.descripcion.trim()
+  if (desc && desc.toLowerCase() !== producto.nombre.toLowerCase()) {
+    return desc.length > 80 ? `${desc.slice(0, 77)}…` : desc
+  }
+  const partes = [producto.codigo]
+  if (producto.marca && producto.marca !== 'Sin marca') partes.push(producto.marca)
+  return partes.join(' · ')
+}
+
 export default function TarjetaProducto({ producto, guardado, vista, onGuardar }: TarjetaProductoProps) {
   const enLista = vista === 'lista'
   const { addItem } = useCart()
+  const ubicacion = useLocation()
+  const fromCatalog = `${ubicacion.pathname}${ubicacion.search}`
 
   return (
     <article
@@ -28,7 +40,7 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
       <button
         type="button"
         aria-pressed={guardado}
-        aria-label={guardado ? `Quitar ${producto.nombre} de guardados` : `Guardar ${producto.nombre}`}
+        aria-label={guardado ? `Quitar ${producto.nombre} de favoritos` : `Guardar ${producto.nombre} en favoritos`}
         onClick={() => onGuardar(producto.id)}
         className={cn(
           'absolute top-3 right-3 z-10 grid size-8 place-items-center rounded-full text-secundario hover:bg-suave hover:text-peligro',
@@ -46,6 +58,7 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
       >
         <Link
           to={`/catalogo/${producto.id}`}
+          state={{ fromCatalog }}
           className={cn('flex min-w-0', enLista ? 'flex-1 flex-row items-center gap-5' : 'flex-col', FOCUS_RING)}
         >
           <ImagenProducto
@@ -60,7 +73,7 @@ export default function TarjetaProducto({ producto, guardado, vista, onGuardar }
               {producto.categoria}
             </p>
             <p className="mt-1 truncate text-base font-semibold text-tinta">{producto.nombre}</p>
-            <p className="mt-0.5 truncate font-mono text-xs text-secundario">{producto.codigo}</p>
+            <p className="mt-0.5 line-clamp-2 text-xs text-secundario">{lineaSecundaria(producto)}</p>
             <p className={cn('font-semibold text-cobre', enLista ? 'mt-2 text-base' : 'mt-3 text-lg')}>
               {formatPrecioMostrador(producto.precio)}
             </p>

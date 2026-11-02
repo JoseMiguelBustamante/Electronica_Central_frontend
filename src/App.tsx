@@ -7,6 +7,8 @@ import RecuperarContrasena from './pages/RecuperarContrasena'
 import RestablecerContrasena from './pages/RestablecerContrasena'
 import CatalogoPublico from './pages/CatalogoPublico'
 import DetallePublico from './pages/DetallePublico'
+import ComoComprar from './pages/ComoComprar'
+import Favoritos from './pages/Favoritos'
 import MisSolicitudes from './pages/MisSolicitudes'
 import Carrito from './pages/Carrito'
 import PagosResultado from './pages/PagosResultado'
@@ -38,6 +40,8 @@ export default function App() {
       <Route element={<TiendaLayout />}>
         <Route path={ROUTES.catalogo} element={<CatalogoPublico />} />
         <Route path="/catalogo/:id" element={<DetallePublico />} />
+        <Route path={ROUTES.comoComprar} element={<ComoComprar />} />
+        <Route path={ROUTES.favoritos} element={<Favoritos />} />
         <Route path={ROUTES.carrito} element={<Carrito />} />
         <Route path={ROUTES.pagosExito} element={<PagosResultado variant="exito" />} />
         <Route path={ROUTES.pagosCancelado} element={<PagosResultado variant="cancelado" />} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowsDownUpIcon,
   CaretDownIcon,
@@ -17,13 +17,16 @@ import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 import LoadingState, { Skeleton } from '../components/LoadingState'
 import TarjetaProducto from '../components/tienda/TarjetaProducto'
+import { COMPRA } from '../lib/compraMensajes'
 import { mensajeError } from '../lib/errors'
+import { alternarFavorito, listarFavoritosIds } from '../lib/favoritosStorage'
 import {
   listarCatalogoPublico,
   listarFiltrosPublicos,
   type FiltrosCatalogo,
   type ProductoPublico,
 } from '../services/catalogoService'
+import { ROUTES } from '../utils/navigation'
 import { FOCUS_RING, cn } from '../utils/styles'
 
 const LIMITE = 20
@@ -51,6 +54,7 @@ export default function CatalogoPublico() {
   const idCategoria = params.get('categoria') ?? ''
   const idMarca = params.get('marca') ?? ''
   const idModelo = params.get('modelo') ?? ''
+  const disponibilidad = params.get('disponibilidad') ?? ''
   const pagina = paginaDesde(params)
   const vista: Vista = params.get('vista') === 'lista' ? 'lista' : 'grilla'
   const orden = (params.get('orden') ?? 'recientes') as Orden
@@ -61,7 +65,8 @@ export default function CatalogoPublico() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [intento, setIntento] = useState(0)
-  const [guardados, setGuardados] = useState<Set<string>>(new Set())
+  const [guardados, setGuardados] = useState<Set<string>>(() => new Set(listarFavoritosIds()))
+  const filtrosActivos = Boolean(buscar || idCategoria || idMarca || idModelo || disponibilidad)
 
   useEffect(() => {
     let vigente = true
@@ -92,12 +97,15 @@ export default function CatalogoPublico() {
   }, [buscar, idCategoria, idMarca, idModelo, pagina, intento])
 
   const visibles = useMemo(() => {
-    const lista = [...productos]
+    let lista = [...productos]
+    if (disponibilidad === 'DISPONIBLE' || disponibilidad === 'NO_DISPONIBLE') {
+      lista = lista.filter((p) => p.disponibilidad === disponibilidad)
+    }
     if (orden === 'precio-asc') lista.sort((a, b) => a.precio - b.precio || a.nombre.localeCompare(b.nombre, 'es'))
     if (orden === 'precio-desc') lista.sort((a, b) => b.precio - a.precio || a.nombre.localeCompare(b.nombre, 'es'))
     if (orden === 'nombre') lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
     return lista
-  }, [orden, productos])
+  }, [disponibilidad, orden, productos])
 
   const fijarParametro = (clave: string, valor: string) => {
     const siguientes = new URLSearchParams(params)
@@ -107,11 +115,16 @@ export default function CatalogoPublico() {
     setParams(siguientes)
   }
 
+  const limpiarFiltros = () => {
+    setParams(new URLSearchParams())
+  }
+
   const alternarGuardado = (id: string) => {
+    const activo = alternarFavorito(id)
     setGuardados((actual) => {
       const siguiente = new Set(actual)
-      if (siguiente.has(id)) siguiente.delete(id)
-      else siguiente.add(id)
+      if (activo) siguiente.add(id)
+      else siguiente.delete(id)
       return siguiente
     })
   }
@@ -121,38 +134,54 @@ export default function CatalogoPublico() {
   return (
     <div>
       <h1 className="text-3xl font-semibold text-tinta">Catálogo</h1>
-      <p className="mt-1 text-sm text-secundario">
-        Precios de mostrador en bolivianos. La solicitud no aparta unidades.
-      </p>
+      <p className="mt-1 text-sm text-secundario">{COMPRA.catalogoResumen}</p>
 
       <div className="mt-6 flex flex-col gap-3 rounded-xl border border-linea bg-white p-3 shadow-sm xl:flex-row xl:items-center">
         <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {filtros.categorias.length > 0 && (
+            <SelectorFiltro
+              id="categoria"
+              etiqueta="Categoría"
+              icono={SquaresFourIcon}
+              value={idCategoria}
+              onChange={(valor) => fijarParametro('categoria', valor)}
+              vacio="Todas las categorías"
+              opciones={filtros.categorias}
+            />
+          )}
+          {filtros.marcas.length > 0 && (
+            <SelectorFiltro
+              id="marca"
+              etiqueta="Marca"
+              icono={TagIcon}
+              value={idMarca}
+              onChange={(valor) => fijarParametro('marca', valor)}
+              vacio="Todas las marcas"
+              opciones={filtros.marcas}
+            />
+          )}
+          {filtros.modelos.length > 0 && (
+            <SelectorFiltro
+              id="modelo"
+              etiqueta="Modelo"
+              icono={CubeIcon}
+              value={idModelo}
+              onChange={(valor) => fijarParametro('modelo', valor)}
+              vacio="Todos los modelos"
+              opciones={filtros.modelos}
+            />
+          )}
           <SelectorFiltro
-            id="categoria"
-            etiqueta="Categoría"
-            icono={SquaresFourIcon}
-            value={idCategoria}
-            onChange={(valor) => fijarParametro('categoria', valor)}
-            vacio="Todas las categorías"
-            opciones={filtros.categorias}
-          />
-          <SelectorFiltro
-            id="marca"
-            etiqueta="Marca"
-            icono={TagIcon}
-            value={idMarca}
-            onChange={(valor) => fijarParametro('marca', valor)}
-            vacio="Todas las marcas"
-            opciones={filtros.marcas}
-          />
-          <SelectorFiltro
-            id="modelo"
-            etiqueta="Modelo"
-            icono={CubeIcon}
-            value={idModelo}
-            onChange={(valor) => fijarParametro('modelo', valor)}
-            vacio="Todos los modelos"
-            opciones={filtros.modelos}
+            id="disponibilidad"
+            etiqueta="Disponibilidad"
+            icono={PackageIcon}
+            value={disponibilidad}
+            onChange={(valor) => fijarParametro('disponibilidad', valor)}
+            vacio="Todas"
+            opciones={[
+              { id: 'DISPONIBLE', nombre: 'Disponible' },
+              { id: 'NO_DISPONIBLE', nombre: 'Sin stock' },
+            ]}
           />
           <SelectorFiltro
             id="orden"
@@ -168,35 +197,42 @@ export default function CatalogoPublico() {
             ]}
           />
         </div>
-        <div className="flex items-center justify-between gap-3 xl:pl-2">
-          <span className="text-xs text-secundario">Vista</span>
-          <div className="flex rounded-lg bg-fondo p-1">
-            <button
-              type="button"
-              aria-pressed={vista === 'grilla'}
-              aria-label="Vista en grilla"
-              onClick={() => fijarParametro('vista', '')}
-              className={cn(
-                'grid size-9 place-items-center rounded-md',
-                vista === 'grilla' ? 'bg-mascara text-white' : 'text-secundario hover:text-tinta',
-                FOCUS_RING,
-              )}
-            >
-              <SquaresFourIcon size={18} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-pressed={vista === 'lista'}
-              aria-label="Vista en lista"
-              onClick={() => fijarParametro('vista', 'lista')}
-              className={cn(
-                'grid size-9 place-items-center rounded-md',
-                vista === 'lista' ? 'bg-mascara text-white' : 'text-secundario hover:text-tinta',
-                FOCUS_RING,
-              )}
-            >
-              <ListIcon size={18} aria-hidden="true" />
-            </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 xl:pl-2">
+          {filtrosActivos && (
+            <Button type="button" variant="secondary" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </Button>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-secundario">Vista</span>
+            <div className="flex rounded-lg bg-fondo p-1">
+              <button
+                type="button"
+                aria-pressed={vista === 'grilla'}
+                aria-label="Vista en grilla"
+                onClick={() => fijarParametro('vista', '')}
+                className={cn(
+                  'grid size-9 place-items-center rounded-md',
+                  vista === 'grilla' ? 'bg-mascara text-white' : 'text-secundario hover:text-tinta',
+                  FOCUS_RING,
+                )}
+              >
+                <SquaresFourIcon size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-pressed={vista === 'lista'}
+                aria-label="Vista en lista"
+                onClick={() => fijarParametro('vista', 'lista')}
+                className={cn(
+                  'grid size-9 place-items-center rounded-md',
+                  vista === 'lista' ? 'bg-mascara text-white' : 'text-secundario hover:text-tinta',
+                  FOCUS_RING,
+                )}
+              >
+                <ListIcon size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -228,15 +264,32 @@ export default function CatalogoPublico() {
       ) : (
         !error &&
         (visibles.length === 0 ? (
-          <div className="mt-6">
+          <div className="mt-6 space-y-4">
             <EmptyState
               icon={PackageIcon}
               title="Sin productos"
               description={
-                buscar || idCategoria || idMarca || idModelo
-                  ? 'Ningún producto activo coincide con esa búsqueda.'
+                filtrosActivos
+                  ? 'Ningún producto activo coincide con esa búsqueda o filtros.'
                   : 'Todavía no hay productos activos en el catálogo.'
               }
+              action={(
+                <div className="flex flex-wrap justify-center gap-2">
+                  {filtrosActivos && (
+                    <Button variant="secondary" onClick={limpiarFiltros}>
+                      Limpiar búsqueda
+                    </Button>
+                  )}
+                  <Link to={ROUTES.catalogo} className={`inline-flex ${FOCUS_RING}`}>
+                    <Button variant="secondary" onClick={limpiarFiltros}>
+                      Ver todo el catálogo
+                    </Button>
+                  </Link>
+                  <Link to={ROUTES.comoComprar} className={`inline-flex ${FOCUS_RING}`}>
+                    <Button>Cómo comprar / consultar</Button>
+                  </Link>
+                </div>
+              )}
             />
           </div>
         ) : (

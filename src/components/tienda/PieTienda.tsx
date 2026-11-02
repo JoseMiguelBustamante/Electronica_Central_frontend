@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { COMPRA } from '../../lib/compraMensajes'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
 import { FOCUS_RING } from '../../utils/styles'
 
@@ -14,12 +15,11 @@ export default function PieTienda() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <p className="text-base font-semibold text-mascara">{BRAND_NAME}</p>
-          <p className="mt-2 max-w-md text-sm leading-6 text-secundario">
-            Componentes electrónicos. El precio se ve en el catálogo y la compra se cierra en el mostrador.
-          </p>
-          <p className="mt-3 text-sm font-semibold text-tinta">Contacto en tienda</p>
-          <p className="mt-1 text-sm text-secundario">Lun–sáb 08:00–12:00 y 13:30–17:00</p>
-          <p className="mt-1 text-sm text-secundario">Consultas y retiros en el local (mostrador).</p>
+          <p className="mt-2 max-w-md text-sm leading-6 text-secundario">{COMPRA.pieResumen}</p>
+          <p className="mt-4 text-sm font-semibold text-tinta">Contacto y retiro</p>
+          <p className="mt-1 text-sm text-tinta">{COMPRA.contactoCiudad}</p>
+          <p className="mt-1 text-sm text-secundario">{COMPRA.contactoHorario}</p>
+          <p className="mt-1 text-sm text-secundario">{COMPRA.contactoNota}</p>
           <a
             href={MAPS_LINK}
             target="_blank"
@@ -32,14 +32,17 @@ export default function PieTienda() {
             <Link to={ROUTES.catalogo} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
               Catálogo
             </Link>
-            <Link to={ROUTES.registro} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
-              Crear cuenta
+            <Link to={ROUTES.comoComprar} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+              Cómo comprar
             </Link>
-            <Link to={ROUTES.login} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
-              Ingresar
+            <Link to={ROUTES.favoritos} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+              Favoritos
             </Link>
             <Link to={ROUTES.misSolicitudes} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
               Mis solicitudes
+            </Link>
+            <Link to={ROUTES.login} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+              Ingresar
             </Link>
           </nav>
         </div>
