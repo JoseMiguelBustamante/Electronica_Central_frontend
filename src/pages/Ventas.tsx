@@ -134,7 +134,7 @@ export default function Ventas() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-tinta">Ventas</h2>
-          <p className="mt-1 text-sm text-secundario">Borradores, confirmación, anulación y pagos (efectivo/QR).</p>
+          <p className="mt-1 text-sm text-secundario">Borradores, confirmación, anulación y pagos (efectivo / Stripe).</p>
         </div>
         <Button onClick={() => setCreando(true)} disabled={clientes.length === 0}>
           <PlusIcon size={18} aria-hidden="true" />
