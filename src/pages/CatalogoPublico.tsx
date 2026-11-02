@@ -17,6 +17,7 @@ import Button from '../components/Button'
 import EmptyState from '../components/EmptyState'
 import LoadingState, { Skeleton } from '../components/LoadingState'
 import TarjetaProducto from '../components/tienda/TarjetaProducto'
+import { recordarCatalogo } from '../lib/catalogoNavegacion'
 import { COMPRA } from '../lib/compraMensajes'
 import { mensajeError } from '../lib/errors'
 import { alternarFavorito, listarFavoritosIds } from '../lib/favoritosStorage'
@@ -67,6 +68,12 @@ export default function CatalogoPublico() {
   const [intento, setIntento] = useState(0)
   const [guardados, setGuardados] = useState<Set<string>>(() => new Set(listarFavoritosIds()))
   const filtrosActivos = Boolean(buscar || idCategoria || idMarca || idModelo || disponibilidad)
+  const mostrarHome = !filtrosActivos && pagina === 1
+
+  useEffect(() => {
+    const qs = params.toString()
+    recordarCatalogo(qs ? `${ROUTES.catalogo}?${qs}` : ROUTES.catalogo)
+  }, [params])
 
   useEffect(() => {
     let vigente = true
@@ -113,6 +120,11 @@ export default function CatalogoPublico() {
     else siguientes.delete(clave)
     if (clave !== 'pagina' && clave !== 'vista') siguientes.delete('pagina')
     setParams(siguientes)
+    if (clave === 'pagina') {
+      window.requestAnimationFrame(() => {
+        document.getElementById('catalogo-resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
   }
 
   const limpiarFiltros = () => {
@@ -131,12 +143,72 @@ export default function CatalogoPublico() {
 
   const totalPaginas = Math.max(1, Math.ceil(total / LIMITE))
 
+  const paginador = (
+    <Paginador
+      pagina={pagina}
+      totalPaginas={totalPaginas}
+      onCambiar={(numero) => fijarParametro('pagina', numero <= 1 ? '' : String(numero))}
+    />
+  )
+
   return (
     <div>
       <h1 className="text-3xl font-semibold text-tinta">Catálogo</h1>
       <p className="mt-1 text-sm text-secundario">{COMPRA.catalogoResumen}</p>
 
-      <div className="mt-6 flex flex-col gap-3 rounded-xl border border-linea bg-white p-3 shadow-sm xl:flex-row xl:items-center">
+      {mostrarHome && !cargando && !error && (
+        <div className="mt-6 space-y-8">
+          {filtros.categorias.length > 0 && (
+            <section aria-labelledby="home-cats">
+              <h2 id="home-cats" className="text-lg font-semibold text-tinta">
+                {COMPRA.homeCategorias}
+              </h2>
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {filtros.categorias.slice(0, 6).map((cat) => (
+                  <li key={cat.id}>
+                    <Link
+                      to={`${ROUTES.catalogo}?categoria=${encodeURIComponent(cat.id)}`}
+                      className={`flex items-center gap-3 rounded-xl border border-linea bg-white p-4 shadow-sm hover:border-mascara ${FOCUS_RING}`}
+                    >
+                      <span className="grid size-10 place-items-center rounded-lg bg-suave text-mascara">
+                        <SquaresFourIcon size={20} aria-hidden="true" />
+                      </span>
+                      <span className="font-semibold text-tinta">{cat.nombre}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {filtros.marcas.length > 0 && (
+            <section aria-labelledby="home-marcas">
+              <h2 id="home-marcas" className="text-lg font-semibold text-tinta">
+                {COMPRA.homeMarcas}
+              </h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {filtros.marcas.slice(0, 12).map((marca) => (
+                  <li key={marca.id}>
+                    <Link
+                      to={`${ROUTES.catalogo}?marca=${encodeURIComponent(marca.id)}`}
+                      className={`inline-flex rounded-full border border-linea bg-white px-3 py-1.5 text-sm font-medium text-tinta hover:border-mascara hover:text-mascara ${FOCUS_RING}`}
+                    >
+                      {marca.nombre}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {productos.length > 0 && (
+            <p className="text-sm font-semibold text-tinta">{COMPRA.homeRecien}</p>
+          )}
+        </div>
+      )}
+
+      <div
+        id="catalogo-filtros"
+        className="mt-6 flex flex-col gap-3 rounded-xl border border-linea bg-white p-3 shadow-sm xl:flex-row xl:items-center"
+      >
         <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {filtros.categorias.length > 0 && (
             <SelectorFiltro
@@ -294,15 +366,14 @@ export default function CatalogoPublico() {
           </div>
         ) : (
           <>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              id="catalogo-resultados"
+              className="mt-5 flex scroll-mt-36 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
               <p className="text-sm text-secundario">
-                {visibles.length} de {total} productos
+                Página {pagina} de {totalPaginas} · {visibles.length} de {total} productos
               </p>
-              <Paginador
-                pagina={pagina}
-                totalPaginas={totalPaginas}
-                onCambiar={(numero) => fijarParametro('pagina', numero <= 1 ? '' : String(numero))}
-              />
+              {paginador}
             </div>
             <ul
               className={cn(
@@ -321,6 +392,12 @@ export default function CatalogoPublico() {
                 </li>
               ))}
             </ul>
+            <div className="mt-6 flex flex-col gap-3 border-t border-linea pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-secundario">
+                Página {pagina} de {totalPaginas}
+              </p>
+              {paginador}
+            </div>
           </>
         ))
       )}

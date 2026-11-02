@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import EncabezadoTienda from '../components/tienda/EncabezadoTienda'
 import PanelCarrito from '../components/tienda/PanelCarrito'
 import PieTienda from '../components/tienda/PieTienda'
+import WhatsAppFlotante from '../components/tienda/WhatsAppFlotante'
 import { CartProvider } from '../hooks/useCart'
 
 export default function TiendaLayout() {
@@ -42,6 +43,7 @@ export default function TiendaLayout() {
         </main>
         <PieTienda />
         <PanelCarrito />
+        <WhatsAppFlotante />
       </div>
     </CartProvider>
   )

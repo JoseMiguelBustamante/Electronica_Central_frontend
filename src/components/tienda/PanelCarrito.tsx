@@ -5,7 +5,9 @@ import Button from '../Button'
 import ImagenProducto from './ImagenProducto'
 import { useCart } from '../../hooks/useCart'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { COMPRA } from '../../lib/compraMensajes'
 import { leerToken } from '../../lib/session'
+import { mensajeConsultaCarrito, urlWhatsapp, whatsappDisponible } from '../../lib/whatsapp'
 import { formatCurrency } from '../../utils/formatters'
 import { ROUTES } from '../../utils/navigation'
 import { FOCUS_RING, cn } from '../../utils/styles'
@@ -182,6 +184,32 @@ export default function PanelCarrito() {
               <ShoppingCartIcon size={16} aria-hidden="true" />
               Ir al carrito
             </Button>
+            {whatsappDisponible() && (
+              <a
+                href={
+                  urlWhatsapp(
+                    mensajeConsultaCarrito(
+                      items.map((item) => ({
+                        codigo: item.codigo,
+                        nombre: item.nombre,
+                        cantidad: item.cantidad,
+                        precio: item.precio,
+                      })),
+                      formatCurrency(total),
+                    ),
+                  ) ?? '#'
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeDrawer}
+                className={cn(
+                  'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#25D366] px-4 text-sm font-semibold text-white hover:bg-[#1ebe57]',
+                  FOCUS_RING,
+                )}
+              >
+                {COMPRA.whatsappCta}
+              </a>
+            )}
             <Button variant="secondary" className="w-full" onClick={closeDrawer}>
               Seguir comprando
             </Button>

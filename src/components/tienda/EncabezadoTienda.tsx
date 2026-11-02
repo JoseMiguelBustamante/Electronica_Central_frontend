@@ -7,6 +7,7 @@ import {
   HeartIcon,
   InfoIcon,
   MagnifyingGlassIcon,
+  PackageIcon,
   ShoppingCartIcon,
   SquaresFourIcon,
   TagIcon,
@@ -14,8 +15,11 @@ import {
 } from '@phosphor-icons/react'
 import { useClickOutside } from '../../hooks/useClickOutside'
 import { useCart } from '../../hooks/useCart'
+import { ultimaRutaCatalogo } from '../../lib/catalogoNavegacion'
+import { COMPRA } from '../../lib/compraMensajes'
 import { cantidadFavoritos } from '../../lib/favoritosStorage'
 import { borrarToken, leerToken } from '../../lib/session'
+import { urlWhatsapp, whatsappDisponible } from '../../lib/whatsapp'
 import { obtenerSesion } from '../../services/authService'
 import { listarCatalogoPublico, listarFiltrosPublicos, type OpcionFiltro, type ProductoPublico } from '../../services/catalogoService'
 import type { SesionUsuario } from '../../types/domain'
@@ -30,24 +34,36 @@ export default function EncabezadoTienda() {
   const busquedaId = useId()
   const menuRef = useRef<HTMLDivElement>(null)
   const catsRef = useRef<HTMLDivElement>(null)
+  const marcasRef = useRef<HTMLDivElement>(null)
   const [texto, setTexto] = useState(params.get('buscar') ?? '')
+  const [categoriaBusqueda, setCategoriaBusqueda] = useState(params.get('categoria') ?? '')
   const [sugerencias, setSugerencias] = useState<ProductoPublico[]>([])
   const [abierto, setAbierto] = useState(false)
   const [menuCuenta, setMenuCuenta] = useState(false)
   const [menuCats, setMenuCats] = useState(false)
+  const [menuMarcas, setMenuMarcas] = useState(false)
   const [categorias, setCategorias] = useState<OpcionFiltro[]>([])
+  const [marcas, setMarcas] = useState<OpcionFiltro[]>([])
   const [favoritosN, setFavoritosN] = useState(0)
   const [usuario, setUsuario] = useState<SesionUsuario | null>(null)
   const conSesion = Boolean(leerToken())
   const cerrarMenu = useCallback(() => setMenuCuenta(false), [])
   const cerrarCats = useCallback(() => setMenuCats(false), [])
+  const cerrarMarcas = useCallback(() => setMenuMarcas(false), [])
   useClickOutside(menuRef, menuCuenta, cerrarMenu)
   useClickOutside(catsRef, menuCats, cerrarCats)
+  useClickOutside(marcasRef, menuMarcas, cerrarMarcas)
 
   useEffect(() => {
     listarFiltrosPublicos()
-      .then((f) => setCategorias(f.categorias))
-      .catch(() => setCategorias([]))
+      .then((f) => {
+        setCategorias(f.categorias)
+        setMarcas(f.marcas)
+      })
+      .catch(() => {
+        setCategorias([])
+        setMarcas([])
+      })
   }, [])
 
   useEffect(() => {
@@ -82,6 +98,7 @@ export default function EncabezadoTienda() {
 
   useEffect(() => {
     setTexto(params.get('buscar') ?? '')
+    setCategoriaBusqueda(params.get('categoria') ?? '')
   }, [params])
 
   useEffect(() => {
@@ -91,23 +108,63 @@ export default function EncabezadoTienda() {
       return
     }
     const temporizador = window.setTimeout(() => {
-      listarCatalogoPublico({ buscar: consulta, limite: 6, pagina: 1 })
+      listarCatalogoPublico({
+        buscar: consulta,
+        idCategoria: categoriaBusqueda || undefined,
+        limite: 6,
+        pagina: 1,
+      })
         .then((pagina) => setSugerencias(pagina.productos))
         .catch(() => setSugerencias([]))
     }, 300)
     return () => window.clearTimeout(temporizador)
-  }, [texto])
+  }, [texto, categoriaBusqueda])
 
   const buscar = (valor: string) => {
     const consulta = valor.trim()
     const siguientes = new URLSearchParams()
     if (consulta) siguientes.set('buscar', consulta)
+    if (categoriaBusqueda) siguientes.set('categoria', categoriaBusqueda)
     setAbierto(false)
     navigate({ pathname: ROUTES.catalogo, search: siguientes.toString() })
   }
 
+  const rutaCatalogo = () => {
+    if (ubicacion.pathname === ROUTES.catalogo) {
+      return `${ubicacion.pathname}${ubicacion.search}${ubicacion.hash}`
+    }
+    return ultimaRutaCatalogo(ROUTES.catalogo)
+  }
+
+  const waHref = whatsappDisponible()
+    ? urlWhatsapp('Hola, quiero consultar un producto de Electrónica Central AZ.')
+    : null
+
   return (
-    <header className="border-b border-linea bg-white">
+    <div className="sticky top-0 z-50 border-b border-linea bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/90">
+      <p className="bg-mascara px-4 py-1.5 text-center text-xs font-medium text-white sm:px-6">
+        {COMPRA.bannerPromo}
+      </p>
+      <div className="hidden border-b border-linea bg-suave/80 px-4 py-1.5 text-xs text-secundario sm:block sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 sm:justify-between">
+          <span>{COMPRA.contactoCiudad}</span>
+          <span className="flex flex-wrap items-center gap-3">
+            <span>{COMPRA.contactoHorario}</span>
+            {waHref && (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`font-semibold text-mascara hover:underline ${FOCUS_RING}`}
+              >
+                WhatsApp +{COMPRA.whatsappE164}
+              </a>
+            )}
+          </span>
+        </div>
+      </div>
+
+    <header>
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-5">
         <Link to={ROUTES.catalogo} className={`flex min-w-0 items-center gap-2.5 ${FOCUS_RING}`}>
           <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-mascara text-white">
@@ -171,18 +228,36 @@ export default function EncabezadoTienda() {
             Buscar producto
           </label>
           <div className="flex gap-2">
-            <input
-              id={busquedaId}
-              value={texto}
-              onChange={(event) => {
-                setTexto(event.target.value)
-                setAbierto(true)
-              }}
-              onFocus={() => setAbierto(true)}
-              placeholder="Buscar por nombre, código o modelo..."
-              autoComplete="off"
-              className={`h-11 min-w-0 flex-1 rounded-lg border border-linea bg-white px-3 text-sm text-tinta ${FOCUS_RING}`}
-            />
+            <div className="flex min-w-0 flex-1 overflow-hidden rounded-lg border border-linea bg-white">
+              <label htmlFor={`${busquedaId}-cat`} className="sr-only">
+                Categoría de búsqueda
+              </label>
+              <select
+                id={`${busquedaId}-cat`}
+                value={categoriaBusqueda}
+                onChange={(event) => setCategoriaBusqueda(event.target.value)}
+                className={`hidden h-11 max-w-[9.5rem] shrink-0 border-r border-linea bg-suave/50 px-2 text-xs font-semibold text-tinta sm:block ${FOCUS_RING}`}
+              >
+                <option value="">Categorías</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nombre}
+                  </option>
+                ))}
+              </select>
+              <input
+                id={busquedaId}
+                value={texto}
+                onChange={(event) => {
+                  setTexto(event.target.value)
+                  setAbierto(true)
+                }}
+                onFocus={() => setAbierto(true)}
+                placeholder="Buscar por nombre, código o modelo..."
+                autoComplete="off"
+                className={`h-11 min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-tinta ${FOCUS_RING}`}
+              />
+            </div>
             <button
               type="submit"
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-cobre px-4 text-sm font-semibold text-white hover:bg-cobre-press ${FOCUS_RING}`}
@@ -235,8 +310,8 @@ export default function EncabezadoTienda() {
 
       <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tienda">
         <NavLinkItem
-          to={ROUTES.catalogo}
-          activo={ubicacion.pathname === ROUTES.catalogo && !ubicacion.hash && !params.get('categoria')}
+          to={rutaCatalogo()}
+          activo={ubicacion.pathname === ROUTES.catalogo && !ubicacion.hash}
           icono={SquaresFourIcon}
           etiqueta="Catálogo"
         />
@@ -246,7 +321,10 @@ export default function EncabezadoTienda() {
             type="button"
             aria-expanded={menuCats}
             aria-haspopup="menu"
-            onClick={() => setMenuCats((v) => !v)}
+            onClick={() => {
+              setMenuMarcas(false)
+              setMenuCats((v) => !v)
+            }}
             className={cn(
               'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
               menuCats || params.get('categoria')
@@ -260,7 +338,7 @@ export default function EncabezadoTienda() {
             <CaretDownIcon size={12} aria-hidden="true" />
           </button>
           {menuCats && (
-            <div role="menu" className="absolute top-full left-0 z-30 mt-0 min-w-56 rounded-lg border border-linea bg-white py-1 shadow-sm">
+            <div role="menu" className="absolute top-full left-0 z-30 mt-0 max-h-80 min-w-56 overflow-y-auto rounded-lg border border-linea bg-white py-1 shadow-sm">
               <Link
                 role="menuitem"
                 to={ROUTES.catalogo}
@@ -288,6 +366,63 @@ export default function EncabezadoTienda() {
           )}
         </div>
 
+        <div className="relative" ref={marcasRef}>
+          <button
+            type="button"
+            aria-expanded={menuMarcas}
+            aria-haspopup="menu"
+            onClick={() => {
+              setMenuCats(false)
+              setMenuMarcas((v) => !v)
+            }}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold',
+              menuMarcas || params.get('marca')
+                ? 'border-mascara text-mascara'
+                : 'border-transparent text-secundario hover:text-tinta',
+              FOCUS_RING,
+            )}
+          >
+            <TagIcon size={16} aria-hidden="true" />
+            Marcas
+            <CaretDownIcon size={12} aria-hidden="true" />
+          </button>
+          {menuMarcas && (
+            <div role="menu" className="absolute top-full left-0 z-30 mt-0 max-h-80 min-w-56 overflow-y-auto rounded-lg border border-linea bg-white py-1 shadow-sm">
+              <Link
+                role="menuitem"
+                to={ROUTES.catalogo}
+                onClick={() => setMenuMarcas(false)}
+                className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}
+              >
+                Todas las marcas
+              </Link>
+              {marcas.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-secundario">Sin marcas cargadas.</p>
+              ) : (
+                marcas.map((marca) => (
+                  <Link
+                    key={marca.id}
+                    role="menuitem"
+                    to={`${ROUTES.catalogo}?marca=${encodeURIComponent(marca.id)}`}
+                    onClick={() => setMenuMarcas(false)}
+                    className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}
+                  >
+                    {marca.nombre}
+                  </Link>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <NavLinkItem
+          to={`${ROUTES.catalogo}?disponibilidad=DISPONIBLE`}
+          activo={params.get('disponibilidad') === 'DISPONIBLE'}
+          icono={PackageIcon}
+          etiqueta="Con stock"
+        />
+
         <NavLinkItem
           to={ROUTES.comoComprar}
           activo={ubicacion.pathname === ROUTES.comoComprar}
@@ -302,6 +437,7 @@ export default function EncabezadoTienda() {
         />
       </nav>
     </header>
+    </div>
   )
 }
 

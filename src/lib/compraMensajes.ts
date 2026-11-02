@@ -3,6 +3,10 @@
 export const COMPRA = {
   catalogoResumen:
     'Precios en bolivianos (BOB). Podés pagar online con Stripe (modo test) o en el local.',
+  bannerPromo: 'Retiro en local · Pago online (Stripe test) o en mostrador · Santa Cruz',
+  homeRecien: 'Productos recientes',
+  homeCategorias: 'Explorá por categoría',
+  homeMarcas: 'Marcas del catálogo',
   fichaPago:
     'Pagá online con Stripe (modo test, BOB) desde el carrito, o pagá en tienda al retirar.',
   fichaAgregado:
@@ -31,4 +35,8 @@ export const COMPRA = {
   contactoHorario: 'Lun–sáb 08:00–12:00 y 13:30–17:00',
   contactoCiudad: 'Santa Cruz de la Sierra, Bolivia',
   contactoNota: 'Consultas y retiros en el local (mostrador).',
+  /** Digitos E.164 sin + (ej. 5917XXXXXXX). En deploy preferí VITE_WHATSAPP. */
+  whatsappE164: '59175682125',
+  whatsappCta: 'Consultar por WhatsApp',
+  whatsappFlotante: 'WhatsApp',
 } as const

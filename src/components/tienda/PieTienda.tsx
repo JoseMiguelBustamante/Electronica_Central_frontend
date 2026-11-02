@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
+import { ultimaRutaCatalogo } from '../../lib/catalogoNavegacion'
 import { COMPRA } from '../../lib/compraMensajes'
+import { urlWhatsapp, whatsappDisponible } from '../../lib/whatsapp'
 import { BRAND_NAME, ROUTES } from '../../utils/navigation'
 import { FOCUS_RING } from '../../utils/styles'
 
@@ -20,6 +22,16 @@ export default function PieTienda() {
           <p className="mt-1 text-sm text-tinta">{COMPRA.contactoCiudad}</p>
           <p className="mt-1 text-sm text-secundario">{COMPRA.contactoHorario}</p>
           <p className="mt-1 text-sm text-secundario">{COMPRA.contactoNota}</p>
+          {whatsappDisponible() && (
+            <a
+              href={urlWhatsapp('Hola, quiero consultar un producto de Electrónica Central AZ.') ?? '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`mt-2 inline-block text-sm font-semibold text-[#128C7E] hover:underline ${FOCUS_RING}`}
+            >
+              WhatsApp +{COMPRA.whatsappE164}
+            </a>
+          )}
           <a
             href={MAPS_LINK}
             target="_blank"
@@ -29,7 +41,7 @@ export default function PieTienda() {
             Abrir ubicación en Google Maps
           </a>
           <nav className="mt-6 flex flex-col gap-2 text-sm" aria-label="Pie de página">
-            <Link to={ROUTES.catalogo} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
+            <Link to={ultimaRutaCatalogo(ROUTES.catalogo)} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>
               Catálogo
             </Link>
             <Link to={ROUTES.comoComprar} className={`text-tinta hover:text-mascara ${FOCUS_RING}`}>

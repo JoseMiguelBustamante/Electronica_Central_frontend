@@ -129,9 +129,12 @@ export interface ProductoPublico {
   precio: number
   idCategoria: string
   categoria: string
+  idMarca: string
   marca: string
   modelo: string
   disponibilidad: string
+  /** Solo cuando el backend informa pocas unidades (≤5); si no, null. */
+  stockRestante: number | null
   compatibilidades: Compatibilidad[]
 }
 
@@ -162,9 +165,13 @@ interface ProductoPublicoApi {
   id_categoria?: string | null
   idCategoria?: string | null
   categoria: string | null
+  id_marca?: string | null
+  idMarca?: string | null
   marca: string | null
   modelo: string | null
   disponibilidad: string
+  stock_restante?: number | string | null
+  stockRestante?: number | string | null
   compatibilidades?: Array<z.infer<typeof compatibilidadSchema>>
 }
 
@@ -172,6 +179,13 @@ interface FiltrosApi {
   categorias?: OpcionFiltro[]
   marcas?: OpcionFiltro[]
   modelos?: OpcionFiltro[]
+}
+
+function mapearStockRestante(row: ProductoPublicoApi): number | null {
+  const crudo = row.stock_restante ?? row.stockRestante
+  if (crudo === null || crudo === undefined || crudo === '') return null
+  const n = Number(crudo)
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 function mapearProductoPublico(row: ProductoPublicoApi): ProductoPublico {
@@ -183,9 +197,11 @@ function mapearProductoPublico(row: ProductoPublicoApi): ProductoPublico {
     precio: Number(row.precio_venta),
     idCategoria: String(row.id_categoria ?? row.idCategoria ?? ''),
     categoria: row.categoria?.trim() || 'Sin categoría',
+    idMarca: String(row.id_marca ?? row.idMarca ?? ''),
     marca: row.marca?.trim() || 'Sin marca',
     modelo: row.modelo?.trim() || '',
     disponibilidad: row.disponibilidad,
+    stockRestante: mapearStockRestante(row),
     compatibilidades: (row.compatibilidades ?? []).map(mapearCompatibilidad),
   }
 }
