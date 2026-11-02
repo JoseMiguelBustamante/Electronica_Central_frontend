@@ -9,6 +9,7 @@ import CatalogoPublico from './pages/CatalogoPublico'
 import DetallePublico from './pages/DetallePublico'
 import MisSolicitudes from './pages/MisSolicitudes'
 import Carrito from './pages/Carrito'
+import PagosResultado from './pages/PagosResultado'
 import Dashboard from './pages/Dashboard'
 import Usuarios from './pages/Usuarios'
 import Bitacora from './pages/Bitacora'
@@ -38,6 +39,8 @@ export default function App() {
         <Route path={ROUTES.catalogo} element={<CatalogoPublico />} />
         <Route path="/catalogo/:id" element={<DetallePublico />} />
         <Route path={ROUTES.carrito} element={<Carrito />} />
+        <Route path={ROUTES.pagosExito} element={<PagosResultado variant="exito" />} />
+        <Route path={ROUTES.pagosCancelado} element={<PagosResultado variant="cancelado" />} />
         <Route path={ROUTES.misSolicitudes} element={<MisSolicitudes />} />
       </Route>
       <Route element={<MainLayout />}>

@@ -27,6 +27,8 @@ export const ROUTES = {
   restablecer: '/restablecer',
   catalogo: '/',
   carrito: '/carrito',
+  pagosExito: '/pagos/exito',
+  pagosCancelado: '/pagos/cancelado',
   misSolicitudes: '/mis-solicitudes',
   dashboard: '/dashboard',
   usuarios: '/usuarios',

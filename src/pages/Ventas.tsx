@@ -292,11 +292,11 @@ function PanelPagos({
         const origin = window.location.origin
         const result = await crearPagoEnLinea(venta.id, {
           monto: monto ? Number(monto) : undefined,
-          successUrl: `${origin}${ROUTES.ventas}?pago=ok`,
-          cancelUrl: `${origin}${ROUTES.ventas}?pago=cancel`,
+          successUrl: `${origin}${ROUTES.pagosExito}?desde=ventas`,
+          cancelUrl: `${origin}${ROUTES.pagosCancelado}?desde=ventas`,
         })
         setCheckoutUrl(result.urlPago)
-        toast.success('Link de pago listo. Abrí Checkout o mostrá el QR al cliente.')
+        toast.success('Link de pago listo. Abrí Checkout (misma pestaña) o mostrá el QR.')
         cargar()
         onChanged()
       } else {
@@ -385,7 +385,7 @@ function PanelPagos({
             >
               {checkoutUrl}
             </a>
-            <Button onClick={() => window.open(checkoutUrl, '_blank', 'noopener,noreferrer')}>
+            <Button onClick={() => { window.location.assign(checkoutUrl) }}>
               Abrir Checkout
             </Button>
           </div>

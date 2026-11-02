@@ -44,8 +44,8 @@ export default function Carrito() {
       const origin = window.location.origin
       const result = await crearCheckoutStripeCarrito({
         items: items.map((item) => ({ idProducto: item.id, cantidad: item.cantidad })),
-        successUrl: `${origin}${ROUTES.carrito}?pago=ok`,
-        cancelUrl: `${origin}${ROUTES.carrito}?pago=cancel`,
+        successUrl: `${origin}${ROUTES.pagosExito}?desde=carrito`,
+        cancelUrl: `${origin}${ROUTES.pagosCancelado}?desde=carrito`,
       })
       window.location.assign(result.url)
     } catch (err) {
