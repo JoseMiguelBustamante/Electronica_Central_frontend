@@ -4,7 +4,7 @@ import { listarRegistrosBitacora } from '../services/bitacoraService'
 import { listarProductosAdmin } from '../services/catalogoService'
 import { listarCompras } from '../services/compraService'
 import { listarAlertasInventario } from '../services/inventarioService'
-import { reporteInventario, reporteVentas } from '../services/reporteService'
+import { reporteVentas } from '../services/reporteService'
 import { listarSolicitudes } from '../services/solicitudService'
 import { listarUsuarios } from '../services/usuarioService'
 import { listarVentas } from '../services/ventaService'
@@ -41,7 +41,6 @@ export function useDashboardData() {
       listarVentas({ estado: 'BORRADOR', limite: 50, pagina: 1 }),
       listarVentas({ limite: 50, pagina: 1 }),
       listarAlertasInventario({ limite: 8, pagina: 1 }),
-      reporteInventario({ fechaCorte: hoy }),
       listarSolicitudes({ estado: 'PENDIENTE', limite: 50, pagina: 1 }),
       listarCompras({ estado: 'PENDIENTE', limite: 50, pagina: 1 }),
       listarProductosAdmin({ limite: 1, pagina: 1 }),
@@ -56,7 +55,6 @@ export function useDashboardData() {
         borradoresR,
         ventasRecientesR,
         alertasInvR,
-        inventarioR,
         solicitudesR,
         comprasR,
         productosR,
@@ -106,16 +104,19 @@ export function useDashboardData() {
         to: ROUTES.ventas,
       })
 
-      const agotados = inventarioR.status === 'fulfilled' ? inventarioR.value.resumen.agotados : 0
-      const bajoMinimo = inventarioR.status === 'fulfilled' ? inventarioR.value.resumen.bajoMinimo : 0
-      // Preferir resumen de reportes: /inventario/alertas a veces viene vacío aunque haya agotados.
-      const alertasTotal = agotados + bajoMinimo
+      // Usar stock REAL (existencia), no el snapshot de Reportes (reconstruye por movimientos).
+      const alertasItems = alertasInvR.status === 'fulfilled' ? alertasInvR.value.items : []
+      const alertasTotal = alertasInvR.status === 'fulfilled' ? alertasInvR.value.meta.total : 0
+      const hayAgotado = alertasItems.some((i) => i.alerta === 'AGOTADO' || i.stockActual <= 0)
 
       ops.push({
         id: 'alertasStock',
         titulo: 'Alertas de stock',
         valor: alertasTotal,
-        contexto: `${agotados} agotados · ${bajoMinimo} bajo mínimo`,
+        contexto:
+          alertasTotal > 0
+            ? 'Según stock actual en inventario'
+            : 'Sin productos agotados ni bajo mínimo',
         to: ROUTES.inventario,
       })
 
@@ -123,29 +124,17 @@ export function useDashboardData() {
         alertasUi.push({
           id: 'stock',
           titulo: 'Inventario requiere atención',
-          detalle: `${agotados} agotados y ${bajoMinimo} bajo mínimo.`,
+          detalle: `${alertasTotal} producto(s) con alerta de stock.`,
           to: ROUTES.inventario,
-          tono: agotados > 0 ? 'peligro' : 'aviso',
+          tono: hayAgotado ? 'peligro' : 'aviso',
         })
-      }
-      if (alertasInvR.status === 'fulfilled') {
-        for (const item of alertasInvR.value.items.slice(0, 5)) {
+        for (const item of alertasItems.slice(0, 5)) {
           alertasUi.push({
             id: `inv-${item.idProducto}`,
             titulo: `${item.codigo} · ${item.alerta || 'Alerta'}`,
             detalle: `${item.nombre} · stock ${item.stockActual} (mín. ${item.stockMinimo})`,
             to: ROUTES.inventario,
             tono: item.stockActual <= 0 ? 'peligro' : 'aviso',
-          })
-        }
-      } else if (inventarioR.status === 'fulfilled') {
-        for (const item of inventarioR.value.items.filter((i) => i.alerta).slice(0, 5)) {
-          alertasUi.push({
-            id: `inv-${item.idProducto}`,
-            titulo: `${item.codigo} · ${item.alerta || 'Alerta'}`,
-            detalle: `${item.nombre} · stock ${item.stockCorte} (mín. ${item.stockMinimo})`,
-            to: ROUTES.inventario,
-            tono: item.stockCorte <= 0 ? 'peligro' : 'aviso',
           })
         }
       }
