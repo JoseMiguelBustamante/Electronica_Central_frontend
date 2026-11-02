@@ -28,6 +28,7 @@ import {
   registrarPagoVenta,
 } from '../services/ventaService'
 import { ROUTES } from '../utils/navigation'
+import { FOCUS_RING } from '../utils/styles'
 import type { Cliente, PagoVenta, ProductoAdmin, Venta } from '../types/domain'
 import { formatCurrency, formatDateTime } from '../utils/formatters'
 
@@ -35,7 +36,6 @@ export default function Ventas() {
   const toast = useToast()
   const [items, setItems] = useState<Venta[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const [productos, setProductos] = useState<ProductoAdmin[]>([])
   const [estado, setEstado] = useState<EstadoCarga>('cargando')
   const [intento, setIntento] = useState(0)
   const [filtroEstado, setFiltroEstado] = useState('')
@@ -52,13 +52,18 @@ export default function Ventas() {
     Promise.all([
       listarVentas({ estado: filtroEstado || undefined, limite: 50 }),
       listarClientes(),
-      listarProductosAdmin({ estado: 'activos', limite: 200 }),
     ]).then(
-      ([ventas, listaClientes, catalogo]) => {
+      ([ventas, listaClientes]) => {
         if (!vigente) return
         setItems(ventas.items)
-        setClientes(listaClientes)
-        setProductos(catalogo.productos.filter((p) => p.stockActual > 0))
+        // Cliente Mostrador primero para venta rápida en mostrador.
+        const ordenados = [...listaClientes].sort((a, b) => {
+          const aMostrador = /mostrador/i.test(a.nombre) ? 0 : 1
+          const bMostrador = /mostrador/i.test(b.nombre) ? 0 : 1
+          if (aMostrador !== bMostrador) return aMostrador - bMostrador
+          return a.nombre.localeCompare(b.nombre, 'es')
+        })
+        setClientes(ordenados)
         setEstado('listo')
       },
       () => {
@@ -187,7 +192,6 @@ export default function Ventas() {
       {creando && (
         <FormularioVenta
           clientes={clientes}
-          productos={productos}
           onClose={() => setCreando(false)}
           onSubmit={async (datos) => {
             await crearVenta(datos)
@@ -216,34 +220,83 @@ export default function Ventas() {
 
 function FormularioVenta({
   clientes,
-  productos,
   onClose,
   onSubmit,
 }: {
   clientes: Cliente[]
-  productos: ProductoAdmin[]
   onClose: () => void
   onSubmit: (datos: {
     idCliente: string
     detalles: Array<{ idProducto: string; cantidad: number }>
   }) => Promise<void>
 }) {
-  const [idCliente, setIdCliente] = useState(clientes[0]?.id ?? '')
-  const [idProducto, setIdProducto] = useState(productos[0]?.id ?? '')
+  const mostrador = clientes.find((c) => /mostrador/i.test(c.nombre))
+  const [idCliente, setIdCliente] = useState(mostrador?.id ?? clientes[0]?.id ?? '')
+  const [busqueda, setBusqueda] = useState('')
+  const [resultados, setResultados] = useState<ProductoAdmin[]>([])
+  const [buscando, setBuscando] = useState(false)
+  const [producto, setProducto] = useState<ProductoAdmin | null>(null)
   const [cantidad, setCantidad] = useState('1')
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
-  const producto = productos.find((p) => p.id === idProducto)
+  useEffect(() => {
+    const texto = busqueda.trim()
+    if (texto.length < 2) {
+      setResultados([])
+      return
+    }
+    let vigente = true
+    const temporizador = window.setTimeout(() => {
+      setBuscando(true)
+      listarProductosAdmin({ buscar: texto, estado: 'activos', limite: 15 })
+        .then(
+          (resultado) => {
+            if (!vigente) return
+            setResultados(resultado.productos)
+          },
+          () => {
+            if (vigente) setResultados([])
+          },
+        )
+        .finally(() => {
+          if (vigente) setBuscando(false)
+        })
+    }, 280)
+    return () => {
+      vigente = false
+      window.clearTimeout(temporizador)
+    }
+  }, [busqueda])
+
+  const qty = Number(cantidad)
+  const stock = Number(producto?.stockActual ?? 0)
+  const precio = Number(producto?.precioVenta ?? 0)
+  const totalLinea = Number.isFinite(qty) && qty > 0 ? qty * precio : 0
+  const sinStock = Boolean(producto) && stock <= 0
+  const excedeStock = Boolean(producto) && Number.isFinite(qty) && qty > stock
+  const puedeCrear = Boolean(producto) && !sinStock && !excedeStock && qty > 0
 
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
+    if (!producto) {
+      setError('Buscá y elegí un producto.')
+      return
+    }
+    if (sinStock) {
+      setError('Ese producto no tiene stock disponible.')
+      return
+    }
+    if (excedeStock) {
+      setError(`La cantidad supera el stock (${stock}).`)
+      return
+    }
     setOcupado(true)
     setError(null)
     try {
       await onSubmit({
         idCliente,
-        detalles: [{ idProducto, cantidad: Number(cantidad) }],
+        detalles: [{ idProducto: producto.id, cantidad: qty }],
       })
     } catch (err) {
       setError(mensajeError(err, 'No se pudo crear la venta.'))
@@ -252,31 +305,118 @@ function FormularioVenta({
   }
 
   return (
-    <Modal title="Nueva venta" onClose={onClose} busy={ocupado} footer={<Button type="submit" form="form-venta" loading={ocupado}>Crear</Button>}>
+    <Modal
+      title="Nueva venta"
+      onClose={onClose}
+      busy={ocupado}
+      footer={(
+        <Button type="submit" form="form-venta" loading={ocupado} disabled={!puedeCrear}>
+          Crear borrador
+        </Button>
+      )}
+    >
       <form id="form-venta" onSubmit={enviar} className="space-y-4">
         {error && <p className="text-sm text-peligro">{error}</p>}
+
         <Select label="Cliente" required value={idCliente} onChange={(e) => setIdCliente(e.target.value)}>
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
+              {c.documento ? ` · ${c.documento}` : ''}
+              {/mostrador/i.test(c.nombre) ? ' (venta rápida)' : ''}
             </option>
           ))}
         </Select>
-        <Select label="Producto" required value={idProducto} onChange={(e) => setIdProducto(e.target.value)}>
-          {productos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.codigo} — {p.nombre} (stock {p.stockActual})
-            </option>
-          ))}
-        </Select>
-        <Input label="Cantidad" type="number" min="0.0001" step="any" required value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
-        <p className="rounded-md border border-linea bg-suave px-3 py-2 text-sm text-secundario">
-          Precio unitario (catálogo):{' '}
-          <span className="font-mono font-semibold text-tinta">
-            {producto ? formatCurrency(producto.precioVenta) : '—'}
-          </span>
-          . No se edita aquí; sale de la base de datos.
-        </p>
+
+        <div className="space-y-2">
+          <Input
+            label="Buscar producto"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Código o nombre (mín. 2 letras)"
+            autoComplete="off"
+          />
+          {busqueda.trim().length >= 2 && (
+            <ul className="max-h-48 overflow-y-auto rounded-md border border-linea bg-superficie">
+              {buscando && <li className="px-3 py-2 text-sm text-secundario">Buscando…</li>}
+              {!buscando && resultados.length === 0 && (
+                <li className="px-3 py-2 text-sm text-secundario">Sin resultados.</li>
+              )}
+              {!buscando && resultados.map((p) => {
+                const agotado = p.stockActual <= 0
+                return (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      disabled={agotado}
+                      onClick={() => {
+                        setProducto(p)
+                        setBusqueda('')
+                        setResultados([])
+                        setCantidad('1')
+                      }}
+                      className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-suave disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
+                    >
+                      <span className="font-medium text-tinta">{p.codigo} — {p.nombre}</span>
+                      <span className="font-mono text-xs text-secundario">
+                        {formatCurrency(p.precioVenta)} · stock {p.stockActual}
+                        {agotado ? ' · sin stock' : ''}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        {producto ? (
+          <div className="space-y-3 rounded-md border border-linea bg-suave p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-tinta">{producto.codigo}</p>
+                <p className="text-sm text-secundario">{producto.nombre}</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setProducto(null)
+                  setCantidad('1')
+                }}
+              >
+                Cambiar
+              </Button>
+            </div>
+            <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-secundario">Precio</dt>
+                <dd className="font-mono font-semibold text-tinta">{formatCurrency(precio)}</dd>
+              </div>
+              <div>
+                <dt className="text-secundario">Stock</dt>
+                <dd className={`font-mono font-semibold ${stock <= 0 ? 'text-peligro' : 'text-tinta'}`}>{stock}</dd>
+              </div>
+              <div>
+                <dt className="text-secundario">Total línea</dt>
+                <dd className="font-mono font-semibold text-cobre">{formatCurrency(totalLinea)}</dd>
+              </div>
+            </dl>
+            <Input
+              label="Cantidad"
+              type="number"
+              min="1"
+              max={stock > 0 ? String(stock) : undefined}
+              step="1"
+              required
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              error={excedeStock ? `Máximo disponible: ${stock}` : sinStock ? 'Sin stock' : undefined}
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-secundario">Escribí para buscar y elegí un producto con stock.</p>
+        )}
       </form>
     </Modal>
   )
