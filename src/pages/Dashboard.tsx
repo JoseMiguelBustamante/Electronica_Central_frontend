@@ -36,8 +36,14 @@ const INDICATOR_ICONS: Record<IndicadorId, Icon> = {
   usuarios: UsersIcon,
 }
 
-/** Accesos del panel = mismos 4 paquetes del menú (sin el grupo Panel). */
-const ACCESOS_POR_PAQUETE = NAV_GROUPS.filter((g) => g.id !== 'panel')
+/** Un acceso por paquete (no repetir todo el menú lateral). */
+const ACCESO_PAQUETE = NAV_GROUPS.filter((g) => g.id !== 'panel').map((grupo) => ({
+  id: grupo.id,
+  label: grupo.paquete,
+  to: grupo.items[0]?.to ?? ROUTES.dashboard,
+  description: grupo.items.map((i) => i.label).join(' · '),
+  icon: grupo.items[0]?.icon ?? PackageIcon,
+}))
 
 const SECTION_TITLE = 'text-base font-semibold text-tinta'
 const LIST_BOX = 'divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie'
@@ -47,15 +53,15 @@ const INSET_FOCUS =
 function DashboardSkeleton() {
   return (
     <LoadingState label="Cargando el panel…">
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-32" />
+            <Skeleton key={index} className="h-28" />
           ))}
         </div>
-        <div className="grid gap-8 xl:grid-cols-3">
-          <Skeleton className="h-72 xl:col-span-2" />
-          <Skeleton className="h-72" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-56" />
+          <Skeleton className="h-56" />
         </div>
       </div>
     </LoadingState>
@@ -67,13 +73,13 @@ export default function Dashboard() {
   const fecha = formatDateTime(new Date().toISOString())
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-6xl space-y-6">
       <header>
         <h2 className="text-xl font-semibold text-tinta">
           {sesion ? `Hola, ${sesion.nombreUsuario}` : 'Panel'}
         </h2>
         <p className="mt-1 text-sm text-secundario">
-          Resumen operativo de la tienda · {fecha}
+          Resumen operativo · {fecha}
         </p>
       </header>
 
@@ -86,7 +92,7 @@ export default function Dashboard() {
               Hoy y pendientes
             </h3>
             {indicadores.length > 0 ? (
-              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                 {indicadores.map((indicador) => (
                   <StatCard
                     key={indicador.id}
@@ -113,8 +119,42 @@ export default function Dashboard() {
             )}
           </section>
 
-          <div className="grid gap-8 xl:grid-cols-3">
-            <section aria-labelledby="alertas-titulo" className="xl:col-span-2">
+          <section aria-labelledby="paquetes-titulo">
+            <h3 id="paquetes-titulo" className={SECTION_TITLE}>
+              Paquetes
+            </h3>
+            <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {ACCESO_PAQUETE.map((paquete) => {
+                const Icono = paquete.icon
+                return (
+                  <li key={paquete.id}>
+                    <Link
+                      to={paquete.to}
+                      className={cn(
+                        'flex min-h-16 items-center gap-3 rounded-lg border border-linea bg-superficie px-4 py-3 hover:border-mascara hover:bg-suave/40',
+                        INSET_FOCUS,
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="grid size-10 shrink-0 place-items-center rounded-md bg-suave text-mascara"
+                      >
+                        <Icono size={20} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-tinta">{paquete.label}</span>
+                        <span className="block text-xs text-secundario">{paquete.description}</span>
+                      </span>
+                      <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            <section aria-labelledby="alertas-titulo">
               <div className="flex items-center justify-between gap-3">
                 <h3 id="alertas-titulo" className={SECTION_TITLE}>
                   Alertas
@@ -123,7 +163,7 @@ export default function Dashboard() {
                   to={ROUTES.inventario}
                   className="rounded-md px-1 text-sm font-medium text-mascara hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mascara"
                 >
-                  Ver inventario
+                  Inventario
                 </Link>
               </div>
               {alertas.length > 0 ? (
@@ -132,7 +172,7 @@ export default function Dashboard() {
                     <li key={alerta.id}>
                       <Link
                         to={alerta.to}
-                        className={`flex min-h-14 items-start gap-3 px-4 py-3 hover:bg-fondo ${INSET_FOCUS}`}
+                        className={`flex min-h-12 items-start gap-3 px-4 py-2.5 hover:bg-fondo ${INSET_FOCUS}`}
                       >
                         <span
                           className={cn(
@@ -147,7 +187,7 @@ export default function Dashboard() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold text-tinta">{alerta.titulo}</span>
-                          <span className="block text-sm text-secundario">{alerta.detalle}</span>
+                          <span className="block text-xs text-secundario">{alerta.detalle}</span>
                         </span>
                         <CaretRightIcon size={16} aria-hidden="true" className="mt-1 shrink-0 text-secundario" />
                       </Link>
@@ -155,56 +195,13 @@ export default function Dashboard() {
                   ))}
                 </ul>
               ) : (
-                <div className="mt-3">
-                  <EmptyState
-                    icon={WarehouseIcon}
-                    title="Sin alertas"
-                    description="No hay borradores ni alertas de stock por ahora."
-                  />
+                <div className={`mt-3 ${LIST_BOX} px-4 py-6`}>
+                  <p className="text-center text-sm text-secundario">Sin alertas de stock ni borradores.</p>
                 </div>
               )}
             </section>
 
-            <section aria-labelledby="accesos-titulo">
-              <h3 id="accesos-titulo" className={SECTION_TITLE}>
-                Paquetes del sistema
-              </h3>
-              <div className="mt-3 space-y-4">
-                {ACCESOS_POR_PAQUETE.map((grupo) => (
-                  <div key={grupo.id}>
-                    <p className="mb-1 px-1 text-[11px] font-semibold tracking-wide text-secundario uppercase">
-                      {grupo.label}
-                    </p>
-                    <ul className={LIST_BOX}>
-                      {grupo.items.map(({ label, to, description, icon: ItemIcon }) => (
-                        <li key={to}>
-                          <Link
-                            to={to}
-                            className={`flex min-h-12 items-center gap-3 px-4 py-2.5 hover:bg-fondo ${INSET_FOCUS}`}
-                          >
-                            <span
-                              aria-hidden="true"
-                              className="grid size-8 shrink-0 place-items-center rounded-md bg-suave text-mascara"
-                            >
-                              <ItemIcon size={18} />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-semibold text-tinta">{label}</span>
-                              <span className="block text-xs text-secundario">{description}</span>
-                            </span>
-                            <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <div className="grid gap-8 xl:grid-cols-3">
-            <section aria-labelledby="cola-titulo" className="xl:col-span-2">
+            <section aria-labelledby="cola-titulo">
               <h3 id="cola-titulo" className={SECTION_TITLE}>
                 Cola operativa
               </h3>
@@ -214,11 +211,11 @@ export default function Dashboard() {
                     <li key={item.id}>
                       <Link
                         to={item.to}
-                        className={`flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-fondo ${INSET_FOCUS}`}
+                        className={`flex min-h-12 items-center gap-3 px-4 py-2.5 hover:bg-fondo ${INSET_FOCUS}`}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold text-tinta">{item.titulo}</span>
-                          <span className="block text-sm text-secundario">{item.detalle}</span>
+                          <span className="block text-xs text-secundario">{item.detalle}</span>
                         </span>
                         <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
                       </Link>
@@ -226,16 +223,14 @@ export default function Dashboard() {
                   ))}
                 </ul>
               ) : (
-                <div className="mt-3">
-                  <EmptyState
-                    icon={TrayIcon}
-                    title="Cola vacía"
-                    description="No hay solicitudes, compras ni borradores pendientes."
-                  />
+                <div className={`mt-3 ${LIST_BOX} px-4 py-6`}>
+                  <p className="text-center text-sm text-secundario">Sin solicitudes, compras ni borradores pendientes.</p>
                 </div>
               )}
             </section>
+          </div>
 
+          <div className="grid items-start gap-4 lg:grid-cols-2">
             <section aria-labelledby="actividad-titulo">
               <div className="flex items-center justify-between gap-3">
                 <h3 id="actividad-titulo" className={SECTION_TITLE}>
@@ -245,7 +240,7 @@ export default function Dashboard() {
                   to={ROUTES.bitacora}
                   className="rounded-md px-1 text-sm font-medium text-mascara hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mascara"
                 >
-                  Ver bitácora
+                  Bitácora
                 </Link>
               </div>
               {actividad.length > 0 ? (
@@ -253,11 +248,11 @@ export default function Dashboard() {
                   {actividad.map((registro) => (
                     <li
                       key={registro.id}
-                      className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                      className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-tinta">{registro.accion}</p>
-                        <p className="break-words text-sm text-tinta">{registro.objeto}</p>
+                        <p className="truncate text-xs text-tinta">{registro.objeto}</p>
                         <p className="mt-0.5 text-xs text-secundario">
                           {registro.usuario} <span aria-hidden="true">·</span>{' '}
                           <time dateTime={registro.fechaHora}>{formatDateTime(registro.fechaHora)}</time>
@@ -270,36 +265,35 @@ export default function Dashboard() {
                   ))}
                 </ul>
               ) : (
-                <div className="mt-3">
-                  <EmptyState
-                    icon={ClockCounterClockwiseIcon}
-                    title="Sin actividad reciente"
-                    description="Las acciones administrativas aparecerán aquí."
-                  />
+                <div className={`mt-3 ${LIST_BOX} px-4 py-6`}>
+                  <div className="flex items-center justify-center gap-2 text-sm text-secundario">
+                    <ClockCounterClockwiseIcon size={18} aria-hidden="true" />
+                    Sin actividad reciente.
+                  </div>
                 </div>
               )}
             </section>
-          </div>
 
-          {sistema.length > 0 && (
-            <section aria-labelledby="sistema-titulo">
-              <h3 id="sistema-titulo" className={SECTION_TITLE}>
-                Catálogo y sistema
-              </h3>
-              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {sistema.map((indicador) => (
-                  <StatCard
-                    key={indicador.id}
-                    title={indicador.titulo}
-                    value={formatNumber(indicador.valor)}
-                    description={indicador.contexto}
-                    icon={INDICATOR_ICONS[indicador.id]}
-                    to={indicador.to}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+            {sistema.length > 0 && (
+              <section aria-labelledby="sistema-titulo">
+                <h3 id="sistema-titulo" className={SECTION_TITLE}>
+                  Catálogo y sistema
+                </h3>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  {sistema.map((indicador) => (
+                    <StatCard
+                      key={indicador.id}
+                      title={indicador.titulo}
+                      value={formatNumber(indicador.valor)}
+                      description={indicador.contexto}
+                      icon={INDICATOR_ICONS[indicador.id]}
+                      to={indicador.to}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
         </>
       )}
     </div>
