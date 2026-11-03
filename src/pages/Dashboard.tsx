@@ -21,7 +21,7 @@ import StatCard from '../components/StatCard'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { formatCurrency, formatDateTime, formatNumber } from '../utils/formatters'
 import type { IndicadorId } from '../types/indicadores'
-import { ROUTES } from '../utils/navigation'
+import { NAV_GROUPS, ROUTES } from '../utils/navigation'
 import { cn } from '../utils/styles'
 
 const INDICATOR_ICONS: Record<IndicadorId, Icon> = {
@@ -36,14 +36,8 @@ const INDICATOR_ICONS: Record<IndicadorId, Icon> = {
   usuarios: UsersIcon,
 }
 
-const QUICK_ACCESS: Array<{ label: string; to: string; description: string; icon: Icon }> = [
-  { label: 'Ventas', to: ROUTES.ventas, description: 'Cobrar y confirmar ventas', icon: ShoppingCartIcon },
-  { label: 'Inventario', to: ROUTES.inventario, description: 'Stock y alertas', icon: WarehouseIcon },
-  { label: 'Productos', to: ROUTES.productos, description: 'Catálogo interno', icon: PackageIcon },
-  { label: 'Compras', to: ROUTES.compras, description: 'Órdenes y recepción', icon: TruckIcon },
-  { label: 'Solicitudes', to: ROUTES.solicitudes, description: 'Pedidos pendientes', icon: NotePencilIcon },
-  { label: 'Reportes', to: ROUTES.reportes, description: 'Ventas e inventario', icon: ChartBarIcon },
-]
+/** Accesos del panel = mismos 4 paquetes del menú (sin el grupo Panel). */
+const ACCESOS_POR_PAQUETE = NAV_GROUPS.filter((g) => g.id !== 'panel')
 
 const SECTION_TITLE = 'text-base font-semibold text-tinta'
 const LIST_BOX = 'divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie'
@@ -173,30 +167,39 @@ export default function Dashboard() {
 
             <section aria-labelledby="accesos-titulo">
               <h3 id="accesos-titulo" className={SECTION_TITLE}>
-                Accesos rápidos
+                Paquetes del sistema
               </h3>
-              <ul className={`mt-3 ${LIST_BOX}`}>
-                {QUICK_ACCESS.map(({ label, to, description, icon: ItemIcon }) => (
-                  <li key={to}>
-                    <Link
-                      to={to}
-                      className={`flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-fondo ${INSET_FOCUS}`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="grid size-9 shrink-0 place-items-center rounded-md bg-suave text-mascara"
-                      >
-                        <ItemIcon size={20} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-tinta">{label}</span>
-                        <span className="block text-sm text-secundario">{description}</span>
-                      </span>
-                      <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
-                    </Link>
-                  </li>
+              <div className="mt-3 space-y-4">
+                {ACCESOS_POR_PAQUETE.map((grupo) => (
+                  <div key={grupo.id}>
+                    <p className="mb-1 px-1 text-[11px] font-semibold tracking-wide text-secundario uppercase">
+                      {grupo.label}
+                    </p>
+                    <ul className={LIST_BOX}>
+                      {grupo.items.map(({ label, to, description, icon: ItemIcon }) => (
+                        <li key={to}>
+                          <Link
+                            to={to}
+                            className={`flex min-h-12 items-center gap-3 px-4 py-2.5 hover:bg-fondo ${INSET_FOCUS}`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="grid size-8 shrink-0 place-items-center rounded-md bg-suave text-mascara"
+                            >
+                              <ItemIcon size={18} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-tinta">{label}</span>
+                              <span className="block text-xs text-secundario">{description}</span>
+                            </span>
+                            <CaretRightIcon size={16} aria-hidden="true" className="shrink-0 text-secundario" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </section>
           </div>
 
