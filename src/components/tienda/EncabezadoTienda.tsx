@@ -23,7 +23,7 @@ import { urlWhatsapp, whatsappDisponible } from '../../lib/whatsapp'
 import { obtenerSesion } from '../../services/authService'
 import { listarCatalogoPublico, listarFiltrosPublicos, type OpcionFiltro, type ProductoPublico } from '../../services/catalogoService'
 import type { SesionUsuario } from '../../types/domain'
-import { BRAND_NAME, ROUTES } from '../../utils/navigation'
+import { BRAND_NAME, ROUTES, esPersonal } from '../../utils/navigation'
 import { formatPrecioMostrador } from '../../utils/formatters'
 import { FOCUS_RING, cn } from '../../utils/styles'
 
@@ -204,6 +204,7 @@ export default function EncabezadoTienda() {
             abierto={menuCuenta}
             conSesion={conSesion}
             nombre={usuario?.nombreUsuario ?? null}
+            esStaff={usuario ? esPersonal(usuario.roles) : false}
             onAlternar={() => setMenuCuenta((valor) => !valor)}
             onCerrar={() => setMenuCuenta(false)}
             onSalir={() => {
@@ -495,6 +496,7 @@ function Cuenta({
   abierto,
   conSesion,
   nombre,
+  esStaff,
   onAlternar,
   onCerrar,
   onSalir,
@@ -503,6 +505,8 @@ function Cuenta({
   abierto: boolean
   conSesion: boolean
   nombre: string | null
+  /** Solo Admin / Vendedor / Desarrollador ven el panel interno. */
+  esStaff: boolean
   onAlternar: () => void
   onCerrar: () => void
   onSalir: () => void
@@ -537,9 +541,11 @@ function Cuenta({
               <Link role="menuitem" to={ROUTES.favoritos} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
                 Favoritos
               </Link>
-              <Link role="menuitem" to={ROUTES.dashboard} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
-                Panel
-              </Link>
+              {esStaff && (
+                <Link role="menuitem" to={ROUTES.dashboard} onClick={onCerrar} className={`block px-3 py-2 text-sm hover:bg-suave ${FOCUS_RING}`}>
+                  Panel
+                </Link>
+              )}
               <button role="menuitem" type="button" onClick={onSalir} className={`block w-full px-3 py-2 text-left text-sm hover:bg-suave ${FOCUS_RING}`}>
                 Salir
               </button>
