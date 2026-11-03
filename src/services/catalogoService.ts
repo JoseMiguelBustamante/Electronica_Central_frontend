@@ -5,6 +5,7 @@ import type {
   Compatibilidad,
   DatosCategoria,
   DatosProducto,
+  DatosUbicacion,
   DatosUnidad,
   Marca,
   Modelo,
@@ -347,6 +348,18 @@ export async function listarUbicaciones(): Promise<Ubicacion[]> {
     pasillo: row.pasillo,
     estante: row.estante,
   }))
+}
+
+export async function crearUbicacion(datos: DatosUbicacion): Promise<void> {
+  await api.post('/api/ubicaciones', datos)
+}
+
+export async function editarUbicacion(id: string, datos: Partial<DatosUbicacion>): Promise<void> {
+  await api.patch(`/api/ubicaciones/${id}`, datos)
+}
+
+export async function eliminarUbicacion(id: string): Promise<void> {
+  await api.delete(`/api/ubicaciones/${id}`)
 }
 
 export async function listarMarcas(): Promise<Marca[]> {

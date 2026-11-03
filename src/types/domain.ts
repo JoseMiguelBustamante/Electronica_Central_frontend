@@ -148,6 +148,12 @@ export interface DatosUnidad {
   permiteFraccion: boolean
 }
 
+export interface DatosUbicacion {
+  codigo: string
+  pasillo: string
+  estante: string
+}
+
 export interface ItemInventario {
   idProducto: string
   codigo: string

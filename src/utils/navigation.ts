@@ -3,6 +3,7 @@ import {
   ClipboardTextIcon,
   CubeIcon,
   LinkIcon,
+  MapPinIcon,
   NotePencilIcon,
   PackageIcon,
   ReceiptIcon,
@@ -42,6 +43,7 @@ export const ROUTES = {
   modelos: '/modelos',
   compatibilidades: '/compatibilidades',
   inventario: '/inventario',
+  ubicaciones: '/ubicaciones',
   proveedores: '/proveedores',
   compras: '/compras',
   clientes: '/clientes',
@@ -164,6 +166,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         to: ROUTES.inventario,
         icon: WarehouseIcon,
         description: 'Stock, alertas y ajustes.',
+      },
+      {
+        label: 'Ubicaciones',
+        to: ROUTES.ubicaciones,
+        icon: MapPinIcon,
+        description: 'Pasillo y estante de almacén.',
       },
       {
         label: 'Proveedores',

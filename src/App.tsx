@@ -22,6 +22,7 @@ import Marcas from './pages/Marcas'
 import Modelos from './pages/Modelos'
 import Compatibilidades from './pages/Compatibilidades'
 import Inventario from './pages/Inventario'
+import Ubicaciones from './pages/Ubicaciones'
 import Proveedores from './pages/Proveedores'
 import Compras from './pages/Compras'
 import Clientes from './pages/Clientes'
@@ -58,6 +59,7 @@ export default function App() {
         <Route path={ROUTES.compatibilidades} element={<Compatibilidades />} />
         <Route path={ROUTES.unidadesMedida} element={<UnidadesMedida />} />
         <Route path={ROUTES.inventario} element={<Inventario />} />
+        <Route path={ROUTES.ubicaciones} element={<Ubicaciones />} />
         <Route path={ROUTES.proveedores} element={<Proveedores />} />
         <Route path={ROUTES.compras} element={<Compras />} />
         <Route path={ROUTES.clientes} element={<Clientes />} />
