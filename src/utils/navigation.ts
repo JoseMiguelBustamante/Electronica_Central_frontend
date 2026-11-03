@@ -1,5 +1,6 @@
 import {
   ChartBarIcon,
+  ArrowCounterClockwiseIcon,
   ClipboardTextIcon,
   CubeIcon,
   LinkIcon,
@@ -48,6 +49,7 @@ export const ROUTES = {
   compras: '/compras',
   clientes: '/clientes',
   ventas: '/ventas',
+  devoluciones: '/devoluciones',
   solicitudes: '/solicitudes',
   reportes: '/reportes',
 } as const
@@ -203,6 +205,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         to: ROUTES.ventas,
         icon: ReceiptIcon,
         description: 'Ventas, pagos y comprobantes.',
+      },
+      {
+        label: 'Devoluciones',
+        to: ROUTES.devoluciones,
+        icon: ArrowCounterClockwiseIcon,
+        description: 'Devolución por componente defectuoso.',
       },
       {
         label: 'Solicitudes',

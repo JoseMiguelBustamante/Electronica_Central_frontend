@@ -27,6 +27,7 @@ import Proveedores from './pages/Proveedores'
 import Compras from './pages/Compras'
 import Clientes from './pages/Clientes'
 import Ventas from './pages/Ventas'
+import Devoluciones from './pages/Devoluciones'
 import Solicitudes from './pages/Solicitudes'
 import Reportes from './pages/Reportes'
 import { ROUTES } from './utils/navigation'
@@ -64,6 +65,7 @@ export default function App() {
         <Route path={ROUTES.compras} element={<Compras />} />
         <Route path={ROUTES.clientes} element={<Clientes />} />
         <Route path={ROUTES.ventas} element={<Ventas />} />
+        <Route path={ROUTES.devoluciones} element={<Devoluciones />} />
         <Route path={ROUTES.solicitudes} element={<Solicitudes />} />
         <Route path={ROUTES.reportes} element={<Reportes />} />
       </Route>
