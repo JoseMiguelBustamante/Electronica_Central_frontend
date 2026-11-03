@@ -11,7 +11,6 @@ import {
   UsersIcon,
   WarningCircleIcon,
   NotePencilIcon,
-  WarehouseIcon,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import Badge from '../components/Badge'
