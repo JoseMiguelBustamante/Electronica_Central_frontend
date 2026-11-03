@@ -91,21 +91,41 @@ export default function Dashboard() {
               Hoy y pendientes
             </h3>
             {indicadores.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                {indicadores.map((indicador) => (
-                  <StatCard
-                    key={indicador.id}
-                    title={indicador.titulo}
-                    value={
-                      indicador.moneda
-                        ? formatCurrency(indicador.valor)
-                        : formatNumber(indicador.valor)
-                    }
-                    description={indicador.contexto}
-                    icon={INDICATOR_ICONS[indicador.id]}
-                    to={indicador.to}
-                  />
-                ))}
+              <div className="mt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {indicadores.slice(0, 4).map((indicador) => (
+                    <StatCard
+                      key={indicador.id}
+                      title={indicador.titulo}
+                      value={
+                        indicador.moneda
+                          ? formatCurrency(indicador.valor)
+                          : formatNumber(indicador.valor)
+                      }
+                      description={indicador.contexto}
+                      icon={INDICATOR_ICONS[indicador.id]}
+                      to={indicador.to}
+                    />
+                  ))}
+                </div>
+                {indicadores.length > 4 && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {indicadores.slice(4).map((indicador) => (
+                      <StatCard
+                        key={indicador.id}
+                        title={indicador.titulo}
+                        value={
+                          indicador.moneda
+                            ? formatCurrency(indicador.valor)
+                            : formatNumber(indicador.valor)
+                        }
+                        description={indicador.contexto}
+                        icon={INDICATOR_ICONS[indicador.id]}
+                        to={indicador.to}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-3">
