@@ -73,7 +73,7 @@ export default function Dashboard() {
   const fecha = formatDateTime(new Date().toISOString())
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full space-y-5">
       <header>
         <h2 className="text-xl font-semibold text-tinta">
           {sesion ? `Hola, ${sesion.nombreUsuario}` : 'Panel'}
