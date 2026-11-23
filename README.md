@@ -31,7 +31,7 @@ El frontend cubre los **Ciclos 1 a 4** del perfil (UI admin + catálogo público
 
 ### Ciclo 4
 
-* Reportes: ventas, ganancias, inventario, rotación/demanda
+* Reportes: ventas, ganancias, inventario, rotación/demanda, con exportación en PDF, Excel (xlsx) y CSV
 
 ### Gestión de productos
 

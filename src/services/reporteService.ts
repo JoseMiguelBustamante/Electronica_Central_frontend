@@ -99,3 +99,42 @@ export async function reporteRotacion(params: {
   })
   return data.data as ReporteRotacion
 }
+
+type TipoExportable = 'ventas' | 'ganancias' | 'inventario' | 'rotacion'
+
+export type FormatoReporte = 'pdf' | 'xlsx' | 'csv'
+
+const ENDPOINTS: Record<TipoExportable, string> = {
+  ventas: '/api/reportes/ventas',
+  ganancias: '/api/reportes/ganancias',
+  inventario: '/api/reportes/inventario',
+  rotacion: '/api/reportes/rotacion-demanda',
+}
+
+export async function descargarReporte(params: {
+  tipo: TipoExportable
+  desde?: string
+  hasta?: string
+  fechaCorte?: string
+  formato: FormatoReporte
+}): Promise<void> {
+  const { tipo, desde, hasta, fechaCorte, formato } = params
+  const query =
+    tipo === 'inventario' ? { fechaCorte } : { desde, hasta }
+  const { data } = await api.get(ENDPOINTS[tipo], {
+    params: { ...query, formato },
+    responseType: 'blob',
+  })
+  const blob = data as Blob
+  // Un error (400/403/500) llega como JSON dentro del blob: detectarlo antes de guardar.
+  if (blob.type.includes('application/json')) {
+    const body = JSON.parse(await blob.text()) as { error?: { message?: string } }
+    throw new Error(body.error?.message || 'No se pudo descargar el reporte.')
+  }
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `reporte-${tipo}.${formato}`
+  link.click()
+  URL.revokeObjectURL(url)
+}

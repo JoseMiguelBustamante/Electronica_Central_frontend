@@ -25,11 +25,14 @@ import Select from '../components/Select'
 import Table from '../components/Table'
 import type { Column } from '../components/Table'
 import { mensajeError } from '../lib/errors'
+import { useToast } from '../hooks/useToast'
 import {
+  descargarReporte,
   reporteGanancias,
   reporteInventario,
   reporteRotacion,
   reporteVentas,
+  type FormatoReporte,
   type ReporteGanancias,
   type ReporteInventario,
   type ReporteRotacion,
@@ -495,6 +498,14 @@ export default function Reportes() {
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
+  const [exportando, setExportando] = useState<FormatoReporte | null>(null)
+  const [rangoExport, setRangoExport] = useState<{
+    tipo: TipoReporte
+    desde: string
+    hasta: string
+    fechaCorte: string
+  } | null>(null)
+  const toast = useToast()
 
   const generar = async (event: FormEvent) => {
     event.preventDefault()
@@ -511,10 +522,29 @@ export default function Reportes() {
       } else {
         setResultado({ tipo: 'rotacion', data: await reporteRotacion({ desde, hasta }) })
       }
+      setRangoExport({ tipo, desde, hasta, fechaCorte })
     } catch (err) {
       setError(mensajeError(err, 'No se pudo generar el reporte.'))
     } finally {
       setOcupado(false)
+    }
+  }
+
+  const descargar = async (formato: FormatoReporte) => {
+    if (!rangoExport) return
+    setExportando(formato)
+    try {
+      const { tipo, desde, hasta, fechaCorte } = rangoExport
+      if (tipo === 'inventario') {
+        await descargarReporte({ tipo, fechaCorte, formato })
+      } else {
+        await descargarReporte({ tipo, desde, hasta, formato })
+      }
+      toast.success(`Reporte ${formato.toUpperCase()} descargado.`)
+    } catch (err) {
+      toast.error(mensajeError(err, 'No se pudo descargar el reporte.'))
+    } finally {
+      setExportando(null)
     }
   }
 
@@ -537,6 +567,7 @@ export default function Reportes() {
           onChange={(e) => {
             setTipo(e.target.value as TipoReporte)
             setResultado(null)
+            setRangoExport(null)
           }}
         >
           <option value="ventas">Ventas</option>
@@ -566,6 +597,36 @@ export default function Reportes() {
           </Button>
         </div>
       </form>
+
+      {rangoExport && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-linea bg-superficie p-3">
+          <span className="text-sm font-medium text-tinta">Exportar:</span>
+          <Button
+            variant="secondary"
+            loading={exportando === 'pdf'}
+            disabled={exportando !== null && exportando !== 'pdf'}
+            onClick={() => descargar('pdf')}
+          >
+            PDF
+          </Button>
+          <Button
+            variant="secondary"
+            loading={exportando === 'xlsx'}
+            disabled={exportando !== null && exportando !== 'xlsx'}
+            onClick={() => descargar('xlsx')}
+          >
+            Excel (xlsx)
+          </Button>
+          <Button
+            variant="secondary"
+            loading={exportando === 'csv'}
+            disabled={exportando !== null && exportando !== 'csv'}
+            onClick={() => descargar('csv')}
+          >
+            CSV
+          </Button>
+        </div>
+      )}
 
       {error && (
         <Alert variant="error" title="Error al generar">
