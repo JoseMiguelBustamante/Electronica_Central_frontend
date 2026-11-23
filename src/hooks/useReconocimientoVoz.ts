@@ -20,7 +20,6 @@ interface EventoResultado extends Event {
   results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>
   resultIndex: number
 }
-
 interface EventoError extends Event {
   error: string
 }
@@ -52,6 +51,7 @@ interface OpcionesUseReconocimientoVoz {
 
 export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimientoVoz) {
   const [estado, setEstado] = useState<EstadoVoz>('inactivo')
+  const [parcial, setParcial] = useState('')
   const reconocimientoRef = useRef<ReconocimientoSpeech | null>(null)
   const onFinalRef = useRef(onFinal)
   const onErrorRef = useRef(onError)
@@ -66,6 +66,7 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
   }, [])
 
   const detener = useCallback(() => {
+    setParcial('')
     try { reconocimientoRef.current?.stop() } catch { /* ya detenido */ }
   }, [])
 
@@ -75,31 +76,40 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
       return
     }
     if (estado === 'procesando') return
+    setParcial('')
     // Fresh instance per utterance: reusing a stopped one throws.
     const reconocimiento = new CONSTRUCTOR_VOZ()
     reconocimiento.lang = 'es-419'
-    reconocimiento.interimResults = false
+    reconocimiento.interimResults = true
     reconocimiento.maxAlternatives = 1
     reconocimiento.continuous = false
 
     reconocimiento.onstart = () => setEstado('escuchando')
     reconocimiento.onresult = (evento) => {
-      const resultado = evento.results[evento.results.length - 1]
-      const texto = resultado?.[0]?.transcript?.trim() ?? ''
-      if (!texto) {
-        onErrorRef.current('No se escuchó nada. Probá de nuevo.')
-        return
+      let finalText = ''
+      let interimText = ''
+      for (let i = evento.resultIndex; i < evento.results.length; i += 1) {
+        const resultado = evento.results[i]
+        const texto = resultado?.[0]?.transcript ?? ''
+        if (resultado.isFinal) finalText += texto
+        else interimText += texto
       }
+      setParcial(interimText.trim())
+      const texto = finalText.trim()
+      if (!texto) return
       setEstado('procesando')
+      setParcial('')
       detener()
       onFinalRef.current(texto)
     }
     reconocimiento.onerror = (evento) => {
       const mensaje = MENSAJES_ERROR[evento.error]
       if (mensaje) onErrorRef.current(mensaje)
+      setParcial('')
       setEstado('inactivo')
     }
     reconocimiento.onend = () => {
+      setParcial('')
       setEstado((actual) => (actual === 'procesando' ? 'procesando' : 'inactivo'))
     }
     reconocimiento.onstart = ((anterior) => () => {
@@ -116,5 +126,5 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
     }
   }, [estado, detener])
 
-  return { estado, soportado: VOZ_SOPORTADA, iniciar, detener }
+  return { estado, parcial, soportado: VOZ_SOPORTADA, iniciar, detener }
 }

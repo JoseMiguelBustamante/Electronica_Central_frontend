@@ -691,10 +691,17 @@ export default function Reportes() {
             className="h-3 w-3 shrink-0 animate-pulse rounded-full"
             style={{ backgroundColor: COLOR_PELIGRO }}
           />
-          <span>
-            <strong>Estoy escuchando…</strong> decí tu reporte, por ejemplo:
-            «ventas de esta semana», «inventario de hoy» o «ganancias de este mes».
-          </span>
+          <div className="min-w-0 flex-1">
+            <span>
+              <strong>Estoy escuchando…</strong> decí tu reporte, por ejemplo:
+              «ventas de esta semana», «inventario de hoy» o «ganancias de este mes».
+            </span>
+            {voz.parcial && (
+              <p className="mt-1 truncate italic text-peligro/80" aria-live="polite">
+                «{voz.parcial}»
+              </p>
+            )}
+          </div>
         </div>
       )}
 
