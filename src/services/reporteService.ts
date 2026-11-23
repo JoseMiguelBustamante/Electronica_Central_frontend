@@ -64,6 +64,21 @@ export interface ReporteRotacion {
   }
 }
 
+export type TipoReporte = 'ventas' | 'ganancias' | 'inventario' | 'rotacion'
+
+export interface ReporteInterpretado {
+  tipo: TipoReporte
+  desde: string
+  hasta: string
+  fechaCorte?: string
+  titulo?: string
+}
+
+export async function interpretarReporteVoz(texto: string): Promise<ReporteInterpretado> {
+  const { data } = await api.post('/api/reportes/interpretar', { texto })
+  return data.data as ReporteInterpretado
+}
+
 export async function reporteVentas(params: {
   desde: string
   hasta: string

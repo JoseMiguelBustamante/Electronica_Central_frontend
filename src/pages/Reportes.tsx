@@ -26,8 +26,10 @@ import Table from '../components/Table'
 import type { Column } from '../components/Table'
 import { mensajeError } from '../lib/errors'
 import { useToast } from '../hooks/useToast'
+import { useReconocimientoVoz } from '../hooks/useReconocimientoVoz'
 import {
   descargarReporte,
+  interpretarReporteVoz,
   reporteGanancias,
   reporteInventario,
   reporteRotacion,
@@ -490,6 +492,32 @@ function DashboardRotacion({ data }: { data: ReporteRotacion }) {
   )
 }
 
+/** Última instancia por defecto del navegador: síntesis de voz del resumen. */
+function pronunciarResumen(resultado: Resultado): void {
+  const sintesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined
+  if (!sintesis) return
+  let frase: string
+  if (resultado.tipo === 'ventas') {
+    const r = resultado.data.resumen
+    frase = `Reporte de ventas generado. Vendido ${formatCurrency(r.vendido)}, cobrado ${formatCurrency(r.cobrado)}.`
+  } else if (resultado.tipo === 'ganancias') {
+    frase = `Reporte de ganancias generado. Ganancia bruta ${formatCurrency(resultado.data.resumen.gananciaBruta)}, con ${resultado.data.items.length} líneas.`
+  } else if (resultado.tipo === 'inventario') {
+    const r = resultado.data.resumen
+    frase = `Reporte de inventario generado. Valoración total ${formatCurrency(r.valoracionTotal)}, ${formatNumber(r.agotados)} agotados y ${formatNumber(r.bajoMinimo)} bajo mínimo.`
+  } else {
+    const rotacion = resultado.data.rotacion.etiqueta ?? (resultado.data.rotacion.valor !== null ? `${formatNumber(resultado.data.rotacion.valor)} veces` : 'no aplicable')
+    frase = `Reporte de rotación generado. Rotación ${rotacion}. Ventas de ${formatNumber(resultado.data.demanda.ventasUnidades)} unidades y ${formatNumber(resultado.data.demanda.solicitudesUnidades)} solicitudes.`
+  }
+  sintesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(frase)
+  utterance.lang = 'es-419'
+  utterance.rate = 1
+  const vozEs = sintesis.getVoices().find((v) => v.lang.toLowerCase().startsWith('es'))
+  if (vozEs) utterance.voice = vozEs
+  sintesis.speak(utterance)
+}
+
 export default function Reportes() {
   const [tipo, setTipo] = useState<TipoReporte>('ventas')
   const [desde, setDesde] = useState(hace30Dias())
@@ -509,26 +537,59 @@ export default function Reportes() {
 
   const generar = async (event: FormEvent) => {
     event.preventDefault()
+    await ejecutarReporte(tipo, desde, hasta, fechaCorte)
+  }
+
+  /* Shared engine for form submit and voice flow: one place for state updates. */
+  const ejecutarReporte = async (
+    tipoPedido: TipoReporte,
+    desdePedido: string,
+    hastaPedido: string,
+    fechaCortePedido: string,
+  ) => {
+    setTipo(tipoPedido)
+    setDesde(desdePedido)
+    setHasta(hastaPedido)
+    setFechaCorte(fechaCortePedido)
     setOcupado(true)
     setError(null)
     setResultado(null)
     try {
-      if (tipo === 'ventas') {
-        setResultado({ tipo: 'ventas', data: await reporteVentas({ desde, hasta }) })
-      } else if (tipo === 'ganancias') {
-        setResultado({ tipo: 'ganancias', data: await reporteGanancias({ desde, hasta }) })
-      } else if (tipo === 'inventario') {
-        setResultado({ tipo: 'inventario', data: await reporteInventario({ fechaCorte }) })
-      } else {
-        setResultado({ tipo: 'rotacion', data: await reporteRotacion({ desde, hasta }) })
-      }
-      setRangoExport({ tipo, desde, hasta, fechaCorte })
+      const nuevo: Resultado =
+        tipoPedido === 'ventas'
+          ? { tipo: 'ventas', data: await reporteVentas({ desde: desdePedido, hasta: hastaPedido }) }
+          : tipoPedido === 'ganancias'
+            ? { tipo: 'ganancias', data: await reporteGanancias({ desde: desdePedido, hasta: hastaPedido }) }
+            : tipoPedido === 'inventario'
+              ? { tipo: 'inventario', data: await reporteInventario({ fechaCorte: fechaCortePedido }) }
+              : { tipo: 'rotacion', data: await reporteRotacion({ desde: desdePedido, hasta: hastaPedido }) }
+      setResultado(nuevo)
+      setRangoExport({ tipo: tipoPedido, desde: desdePedido, hasta: hastaPedido, fechaCorte: fechaCortePedido })
+      pronunciarResumen(nuevo)
     } catch (err) {
       setError(mensajeError(err, 'No se pudo generar el reporte.'))
     } finally {
       setOcupado(false)
     }
   }
+
+  /* Voz → interpretación IA → ejecutarReporte (S1/S3/S6) */
+  const procesarOrdenDeVoz = async (texto: string) => {
+    try {
+      const interpretado = await interpretarReporteVoz(texto)
+      const tipoVoz = interpretado.tipo as TipoReporte
+      const fechaCorteVoz = interpretado.fechaCorte ?? hoyIso()
+      await ejecutarReporte(tipoVoz, interpretado.desde, interpretado.hasta, fechaCorteVoz)
+      toast.success('Reporte por voz generado.')
+    } catch (err) {
+      toast.error(mensajeError(err, 'No se pudo procesar el comando de voz.'))
+    }
+  }
+
+  const voz = useReconocimientoVoz({
+    onFinal: (texto) => { void procesarOrdenDeVoz(texto) },
+    onError: (mensaje) => { if (mensaje) toast.error(mensaje) },
+  })
 
   const descargar = async (formato: FormatoReporte) => {
     if (!rangoExport) return
@@ -591,10 +652,24 @@ export default function Reportes() {
           </>
         )}
 
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
           <Button type="submit" loading={ocupado}>
             Generar dashboard
           </Button>
+          {voz.soportado && (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={voz.estado !== 'inactivo' && !ocupado}
+              onClick={() => (voz.estado === 'inactivo' ? voz.iniciar() : voz.detener())}
+            >
+              {voz.estado === 'escuchando'
+                ? 'Escuchando…'
+                : voz.estado === 'procesando'
+                  ? 'Procesando…'
+                  : 'Dictar reporte'}
+            </Button>
+          )}
         </div>
       </form>
 
