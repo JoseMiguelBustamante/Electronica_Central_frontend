@@ -583,6 +583,9 @@ export default function Reportes() {
       toast.success('Reporte por voz generado.')
     } catch (err) {
       toast.error(mensajeError(err, 'No se pudo procesar el comando de voz.'))
+    } finally {
+      // Siempre liberar el micrófono: sin esto el botón queda 'Procesando…' para siempre.
+      voz.reset()
     }
   }
 
@@ -732,6 +735,19 @@ export default function Reportes() {
           >
             CSV
           </Button>
+        </div>
+      )}
+
+      {voz.estado === 'procesando' && voz.parcial && (
+        <div className="flex items-center gap-3 rounded-lg border border-linea bg-suave px-4 py-3 text-sm text-tinta">
+          <span
+            aria-hidden="true"
+            className="h-3 w-3 shrink-0 animate-pulse rounded-full"
+            style={{ backgroundColor: COLOR_MASCARA }}
+          />
+          <span className="min-w-0 flex-1 truncate" aria-live="polite">
+            Reconocido: <strong>«{voz.parcial}»</strong> — interpretando con IA…
+          </span>
         </div>
       )}
 

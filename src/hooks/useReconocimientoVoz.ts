@@ -97,8 +97,9 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
       setParcial(interimText.trim())
       const texto = finalText.trim()
       if (!texto) return
+      // Keep the final transcript visible while the interpretation runs.
+      setParcial(texto)
       setEstado('procesando')
-      setParcial('')
       detener()
       onFinalRef.current(texto)
     }
@@ -109,7 +110,6 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
       setEstado('inactivo')
     }
     reconocimiento.onend = () => {
-      setParcial('')
       setEstado((actual) => (actual === 'procesando' ? 'procesando' : 'inactivo'))
     }
     reconocimiento.onstart = ((anterior) => () => {
@@ -126,5 +126,10 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
     }
   }, [estado, detener])
 
-  return { estado, parcial, soportado: VOZ_SOPORTADA, iniciar, detener }
+  const reset = useCallback(() => {
+    setParcial('')
+    setEstado('inactivo')
+  }, [])
+
+  return { estado, parcial, soportado: VOZ_SOPORTADA, iniciar, detener, reset }
 }
