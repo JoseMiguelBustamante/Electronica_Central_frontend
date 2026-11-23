@@ -66,7 +66,8 @@ export function useReconocimientoVoz({ onFinal, onError }: OpcionesUseReconocimi
   }, [])
 
   const detener = useCallback(() => {
-    setParcial('')
+    // NOTA: no limpia parcial a propósito: el transcript final debe seguir
+    // visible durante el 'procesando'. Se limpia en iniciar/onerror/reset.
     try { reconocimientoRef.current?.stop() } catch { /* ya detenido */ }
   }, [])
 
