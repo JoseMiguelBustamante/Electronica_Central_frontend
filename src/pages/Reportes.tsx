@@ -659,19 +659,44 @@ export default function Reportes() {
           {voz.soportado && (
             <Button
               type="button"
-              variant="secondary"
-              loading={voz.estado !== 'inactivo' && !ocupado}
+              variant={voz.estado === 'escuchando' ? 'danger' : 'secondary'}
+              loading={voz.estado === 'procesando'}
               onClick={() => (voz.estado === 'inactivo' ? voz.iniciar() : voz.detener())}
+              className={voz.estado === 'escuchando' ? 'animate-pulse' : undefined}
+              title={voz.estado === 'escuchando' ? 'Tocá para cancelar el dictado' : undefined}
             >
-              {voz.estado === 'escuchando'
-                ? 'Escuchando…'
-                : voz.estado === 'procesando'
-                  ? 'Procesando…'
-                  : 'Dictar reporte'}
+              {voz.estado === 'escuchando' ? (
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2.5 w-2.5 animate-pulse rounded-full"
+                    style={{ backgroundColor: COLOR_PELIGRO }}
+                  />
+                  Escuchando… (tocá para cancelar)
+                </span>
+              ) : voz.estado === 'procesando' ? (
+                'Procesando…'
+              ) : (
+                'Dictar reporte'
+              )}
             </Button>
           )}
         </div>
       </form>
+
+      {voz.estado === 'escuchando' && (
+        <div className="flex items-center gap-3 rounded-lg border border-peligro bg-peligro-suave px-4 py-3 text-sm text-peligro">
+          <span
+            aria-hidden="true"
+            className="h-3 w-3 shrink-0 animate-pulse rounded-full"
+            style={{ backgroundColor: COLOR_PELIGRO }}
+          />
+          <span>
+            <strong>Estoy escuchando…</strong> decí tu reporte, por ejemplo:
+            «ventas de esta semana», «inventario de hoy» o «ganancias de este mes».
+          </span>
+        </div>
+      )}
 
       {rangoExport && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-linea bg-superficie p-3">
