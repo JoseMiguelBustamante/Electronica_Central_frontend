@@ -493,28 +493,67 @@ function DashboardRotacion({ data }: { data: ReporteRotacion }) {
 }
 
 /** Última instancia por defecto del navegador: síntesis de voz del resumen. */
+const VOZ_PREFERIDAS: Array<{ re: RegExp; en: 'nombre' | 'lang' }> = [
+  { re: /google.*esp/i, en: 'nombre' },
+  { re: /microsoft.*(natural|online)[^,]*esp/i, en: 'nombre' },
+  { re: /esp/i, en: 'nombre' },
+  { re: /^es$|^es-/i, en: 'lang' },
+]
+
+function elegirVoz(sintesis: SpeechSynthesis): SpeechSynthesisVoice | undefined {
+  const voces = sintesis.getVoices()
+  for (const { re, en } of VOZ_PREFERIDAS) {
+    const voice = voces.find((v) => (en === 'nombre' ? re.test(v.name) : re.test(v.lang)))
+    if (voice) return voice
+  }
+  return undefined
+}
+
+/** Fecha en palabras: "23 de noviembre de 2026" — así la voz suena humana. */
+function fechaVoz(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Intl.DateTimeFormat('es', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+  }).format(new Date(Date.UTC(y, m - 1, d)))
+}
+
+/** Monto legible por la voz: "107 bolivianos con 50 centavos" (nunca "Bs 107.50"). */
+function dineroVoz(monto: number): string {
+  const centavos = Math.round(monto * 100)
+  const entero = Math.trunc(centavos / 100)
+  const resto = centavos % 100
+  return `${entero} bolivianos${resto ? ` con ${resto} centavos` : ''}`
+}
+
+const fechaDelResultado = (resultado: Resultado): string | undefined =>
+  'periodo' in resultado.data ? resultado.data.periodo.desde : undefined
+
 function pronunciarResumen(resultado: Resultado): void {
   const sintesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined
   if (!sintesis) return
   let frase: string
   if (resultado.tipo === 'ventas') {
     const r = resultado.data.resumen
-    frase = `Reporte de ventas generado. Vendido ${formatCurrency(r.vendido)}, cobrado ${formatCurrency(r.cobrado)}.`
+    const desde = fechaDelResultado(resultado)
+    const periodo = desde ? ` Entre ${fechaVoz(desde)} y ${fechaVoz(resultado.data.periodo.hasta)}.` : ''
+    frase = `Reporte de ventas listo.${periodo} Vendieron ${dineroVoz(r.vendido)} y se cobró ${dineroVoz(r.cobrado)}, en ${resultado.data.items.length} ventas.`
   } else if (resultado.tipo === 'ganancias') {
-    frase = `Reporte de ganancias generado. Ganancia bruta ${formatCurrency(resultado.data.resumen.gananciaBruta)}, con ${resultado.data.items.length} líneas.`
+    frase = `Ganancia bruta: ${dineroVoz(resultado.data.resumen.gananciaBruta)}, en ${resultado.data.items.length} líneas de venta.`
   } else if (resultado.tipo === 'inventario') {
     const r = resultado.data.resumen
-    frase = `Reporte de inventario generado. Valoración total ${formatCurrency(r.valoracionTotal)}, ${formatNumber(r.agotados)} agotados y ${formatNumber(r.bajoMinimo)} bajo mínimo.`
+    frase = `Inventario valorado en ${dineroVoz(r.valoracionTotal)}. Hay ${r.agotados === 0 ? 'ningún producto agotado' : `${r.agotados} agotados`} y ${r.bajoMinimo} bajo mínimo.`
   } else {
-    const rotacion = resultado.data.rotacion.etiqueta ?? (resultado.data.rotacion.valor !== null ? `${formatNumber(resultado.data.rotacion.valor)} veces` : 'no aplicable')
-    frase = `Reporte de rotación generado. Rotación ${rotacion}. Ventas de ${formatNumber(resultado.data.demanda.ventasUnidades)} unidades y ${formatNumber(resultado.data.demanda.solicitudesUnidades)} solicitudes.`
+    const d = resultado.data
+    const rotacion = d.rotacion.etiqueta ?? (d.rotacion.valor !== null ? `${d.rotacion.valor} veces` : 'no aplicable')
+    frase = `Rotación de inventario: ${rotacion}. Ventas de ${d.demanda.ventasUnidades} unidades, con ${d.demanda.solicitudesUnidades} solicitudes de pedido.`
   }
   sintesis.cancel()
   const utterance = new SpeechSynthesisUtterance(frase)
   utterance.lang = 'es-419'
-  utterance.rate = 1
-  const vozEs = sintesis.getVoices().find((v) => v.lang.toLowerCase().startsWith('es'))
-  if (vozEs) utterance.voice = vozEs
+  utterance.rate = 1.03
+  const voz = elegirVoz(sintesis)
+  if (voz) utterance.voice = voz
   sintesis.speak(utterance)
 }
 
@@ -573,10 +612,15 @@ export default function Reportes() {
     }
   }
 
-  /* Voz → interpretación IA → ejecutarReporte (S1/S3/S6) */
+  /* Voz → interpretación IA → ejecutarReporte (S1/S3/S6/S7) */
   const procesarOrdenDeVoz = async (texto: string) => {
     try {
-      const interpretado = await interpretarReporteVoz(texto)
+      // Contexto conversacional sin estado: el dictado anterior viaja como
+      // referencia para "el mes anterior", "esa misma semana", etc.
+      const contexto = rangoExport
+        ? { tipo: rangoExport.tipo, desde: rangoExport.desde, hasta: rangoExport.hasta, fechaCorte: rangoExport.fechaCorte || undefined }
+        : undefined
+      const interpretado = await interpretarReporteVoz(texto, contexto)
       const tipoVoz = interpretado.tipo as TipoReporte
       const fechaCorteVoz = interpretado.fechaCorte ?? hoyIso()
       await ejecutarReporte(tipoVoz, interpretado.desde, interpretado.hasta, fechaCorteVoz)

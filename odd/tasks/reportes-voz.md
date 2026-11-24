@@ -44,6 +44,13 @@ procesarOrdenDeVoz → interpretarReporteVoz → ejecutarReporte; botón 'Dictar
 reporte' (hidden si !soportado, Escuchando…/Procesando…); degradación S5;
 README ciclo 4 actualizado. Evidencia: npm run build 0 errores TS; eslint de
 los 3 archivos sin errores.
+T7 — [DONE] S8/L3: interpretarReporteVoz(texto, contexto?: ContextoReporte);
+procesarOrdenDeVoz reenvía rangoExport como contexto (follow-up "el mes
+anterior"); pronunciarResumen con elegirVoz (prefiere Google español /
+Microsoft Natural > cualquier /esp/ en nombre > es-* en lang), fechaVoz
+("23 de noviembre de 2026" con Intl es + UTC), dineroVoz ("107 bolivianos con
+50 centavos", sin "Bs"/separadores), rate 1.03 y frases con cadencia.
+Evidencia: build 0 TS errors; eslint de los 2 archivos limpio.
 
 ## Log
 
