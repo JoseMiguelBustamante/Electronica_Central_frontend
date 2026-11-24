@@ -25,13 +25,16 @@ import Select from '../components/Select'
 import Table from '../components/Table'
 import type { Column } from '../components/Table'
 import type { ToastApi } from '../hooks/toastContext'
+import { Link } from 'react-router-dom'
 import { mensajeError } from '../lib/errors'
+import { ROUTES } from '../utils/navigation'
 import { useToast } from '../hooks/useToast'
 import { useReconocimientoVoz } from '../hooks/useReconocimientoVoz'
 import {
   cambiarModeloIA,
   descargarReporte,
   interpretarReporteVoz,
+  buscarVentas,
   obtenerModeloIA,
   preguntarSobreInforme,
   reporteGanancias,
@@ -39,6 +42,7 @@ import {
   reporteRotacion,
   reporteVentas,
   type ContextoReporte,
+  type VentaBuscada,
   type PreguntaInformeHistorial,
   type FormatoReporte,
   type ReporteGanancias,
@@ -764,6 +768,7 @@ export default function Reportes() {
   const toast = useToast()
   // Nivel 2: turnos previos del dictado (máx 5) que viajan al intérprete.
   const historialRef = useRef<ContextoReporte[]>([])
+  const [ventasEncontradas, setVentasEncontradas] = useState<VentaBuscada[] | null>(null)
 
   const generar = async (event: FormEvent) => {
     event.preventDefault()
@@ -785,6 +790,7 @@ export default function Reportes() {
     setOcupado(true)
     setError(null)
     setResultado(null)
+    setVentasEncontradas(null)
     try {
       const nuevo: Resultado =
         tipoPedido === 'ventas'
@@ -816,6 +822,34 @@ export default function Reportes() {
         ? { tipo: rangoExport.tipo, desde: rangoExport.desde, hasta: rangoExport.hasta, fechaCorte: rangoExport.fechaCorte || undefined }
         : undefined
       const interpretado = await interpretarReporteVoz(texto, contexto, historialRef.current)
+      // Acción de búsqueda: el pedido nombra una venta concreta (S13).
+      if (interpretado.accion === 'buscar_venta') {
+        const criterio = interpretado.criterio ?? {}
+        if (!criterio.comprobante && !criterio.cliente) {
+          throw new Error('No entendí qué venta buscar. Decí el número o el cliente.')
+        }
+        const encontradas = await buscarVentas(criterio)
+        setVentasEncontradas(encontradas)
+        setResultado(null)
+        setRangoExport(null)
+        if (encontradas.length === 0) {
+          toast.error('No encontré ventas con ese criterio.')
+          decir('No encontré ventas con ese criterio.')
+        } else {
+          const primera = encontradas[0]
+          const detalle = `${encontradas.length === 1 ? 'Encontré 1 venta' : `Encontré ${encontradas.length} ventas`}. `
+            + `${primera.cliente}, ${formatCurrency(primera.total)}, estado ${primera.estado}.`
+          if (encontradas.length === 1) {
+            toast.success('Venta encontrada.')
+            decir(detalle)
+          } else {
+            toast.success(`${encontradas.length} ventas encontradas.`)
+            decir(detalle)
+          }
+        }
+        return
+      }
+      setVentasEncontradas(null)
       const pedidos = interpretado.reportes?.length
         ? interpretado.reportes
         : [{ tipo: interpretado.tipo, desde: interpretado.desde, hasta: interpretado.hasta, fechaCorte: interpretado.fechaCorte }]
@@ -1041,6 +1075,41 @@ export default function Reportes() {
           title="Sin reporte"
           description="Elija el tipo y el rango, luego pulse Generar dashboard."
         />
+      )}
+
+      {ventasEncontradas && (
+        <section className="rounded-lg border border-linea bg-superficie p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-tinta">
+              Ventas encontradas ({ventasEncontradas.length})
+            </h3>
+            <Link to={ROUTES.ventas} className="text-xs font-medium text-cobre underline">
+              Ir a Ventas
+            </Link>
+          </div>
+          {ventasEncontradas.length === 0 ? (
+            <p className="mt-2 text-sm text-secundario">
+              No hay ventas con ese número o cliente. Probá otro criterio.
+            </p>
+          ) : (
+            <ul className="mt-3 divide-y divide-linea text-sm">
+              {ventasEncontradas.map((v) => (
+                <li key={v.idVenta} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                  <span className="min-w-0">
+                    <span className="text-tinta">{v.cliente}</span>
+                    <span className="ml-2 text-xs text-secundario">{formatDateTime(v.fechaHora)}</span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="rounded bg-suave px-2 py-0.5 text-xs font-medium text-tinta">
+                      {v.estado}
+                    </span>
+                    <span className="font-mono tabular-nums text-tinta">{formatCurrency(v.total)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {resultado && <PreguntasInforme resultado={resultado} toast={toast} />}

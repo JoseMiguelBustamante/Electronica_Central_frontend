@@ -81,7 +81,17 @@ export interface ReportePedido {
   fechaCorte?: string
 }
 
+export interface CriterioBusquedaVenta {
+  comprobante?: string
+  cliente?: string
+  desde?: string
+  hasta?: string
+}
+
 export interface ReporteInterpretado {
+  /** 'reporte' (default) o 'buscar_venta' cuando el pedido nombra una venta. */
+  accion?: 'reporte' | 'buscar_venta'
+  criterio?: CriterioBusquedaVenta
   tipo: TipoReporte
   desde: string
   hasta: string
@@ -224,4 +234,26 @@ export async function preguntarSobreInforme(
   if (historial.length) body.historial = historial.slice(-5)
   const { data } = await api.post('/api/reportes/preguntar', body)
   return data.data as RespuestaInforme
+}
+
+export interface VentaBuscada {
+  idVenta: string
+  fechaHora: string
+  estado: string
+  cliente: string
+  vendedor?: string
+  total: number
+  cobrado: number
+  saldo: number
+  numeroComprobante?: string | null
+}
+
+/** Busca ventas puntuales por comprobante y/o cliente (dictado "la venta 123"). */
+export async function buscarVentas(criterio: CriterioBusquedaVenta): Promise<VentaBuscada[]> {
+  const params: Record<string, string | number> = { limite: 20 }
+  if (criterio.comprobante) params.comprobante = criterio.comprobante
+  if (criterio.cliente) params.cliente = criterio.cliente
+  const { data } = await api.get('/api/ventas', { params })
+  const items = (data?.data?.items ?? data?.items ?? []) as VentaBuscada[]
+  return items
 }
