@@ -32,6 +32,15 @@ procesando; abort/onclick corto detiene; error de reconocimiento → toast.
 S6: no validar frases en el front: el front solo captura la transcripción
 completa y la envía tal cual.
 
+T11 — [DONE] S12 fase 2: caja "Preguntá sobre este informe" bajo el dashboard
+con input + botón "Dictar pregunta" (mismo hook de reconocimiento);
+informeParaIa() serializa periodo/resumen/items (máx 60) según el tipo
+(rotación aplana rotacion+demanda en resumen); la respuesta se muestra y se
+lee con decir() (helper extraído de pronunciarResumen); historial de hasta 5
+preguntas colapsable; las preguntas nunca buscan en la BD, solo razonan sobre
+el informe en pantalla.
+Evidencia: build 0 TS errors; eslint limpio.
+
 ## Tasks
 
 T9 — [DONE] S10 historial multi-turno: interpretarReporteVoz(texto, contexto?,
