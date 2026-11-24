@@ -203,3 +203,25 @@ export async function descargarReporte(params: {
   link.click()
   URL.revokeObjectURL(url)
 }
+
+export interface RespuestaInforme {
+  respuesta: string
+  destacados?: string[]
+}
+
+export interface PreguntaInformeHistorial {
+  pregunta: string
+  respuesta: string
+}
+
+/** Fase 2: pregunta libre SOBRE el informe ya generado (no busca en la BD). */
+export async function preguntarSobreInforme(
+  pregunta: string,
+  informe: Record<string, unknown>,
+  historial: PreguntaInformeHistorial[],
+): Promise<RespuestaInforme> {
+  const body: Record<string, unknown> = { pregunta, informe }
+  if (historial.length) body.historial = historial.slice(-5)
+  const { data } = await api.post('/api/reportes/preguntar', body)
+  return data.data as RespuestaInforme
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { ChartBarIcon } from '@phosphor-icons/react'
 import {
@@ -33,11 +33,13 @@ import {
   descargarReporte,
   interpretarReporteVoz,
   obtenerModeloIA,
+  preguntarSobreInforme,
   reporteGanancias,
   reporteInventario,
   reporteRotacion,
   reporteVentas,
   type ContextoReporte,
+  type PreguntaInformeHistorial,
   type FormatoReporte,
   type ReporteGanancias,
   type ReporteInventario,
@@ -533,6 +535,48 @@ function dineroVoz(monto: number): string {
 const fechaDelResultado = (resultado: Resultado): string | undefined =>
   'periodo' in resultado.data ? resultado.data.periodo.desde : undefined
 
+/** Lee un texto en voz alta con la mejor voz española disponible. */
+function decir(frase: string): void {
+  const sintesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined
+  if (!sintesis) return
+  sintesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(frase)
+  utterance.lang = 'es-419'
+  utterance.rate = 1.03
+  const voz = elegirVoz(sintesis)
+  if (voz) utterance.voice = voz
+  sintesis.speak(utterance)
+}
+
+/** Serializa el resultado a un informe plano (solo datos, sin componentes). */
+function informeParaIa(resultado: Resultado): Record<string, unknown> {
+  const base: Record<string, unknown> = { tipo: resultado.tipo }
+  const data = resultado.data as unknown as Record<string, unknown>
+  if (resultado.tipo === 'rotacion') {
+    const r = data.rotacion as Record<string, unknown>
+    const d = data.demanda as Record<string, unknown>
+    return {
+      ...base,
+      periodo: data.periodo,
+      resumen: { ...r, ...d },
+    }
+  }
+  if (resultado.tipo === 'inventario') {
+    return {
+      ...base,
+      fechaCorte: data.fechaCorte,
+      resumen: data.resumen,
+      items: (data.items as unknown[]).slice(0, 60),
+    }
+  }
+  return {
+    ...base,
+    periodo: data.periodo,
+    resumen: data.resumen,
+    items: (data.items as unknown[]).slice(0, 60),
+  }
+}
+
 function pronunciarResumen(resultado: Resultado, prefijo?: string): void {
   const sintesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined
   if (!sintesis) return
@@ -552,13 +596,7 @@ function pronunciarResumen(resultado: Resultado, prefijo?: string): void {
     const rotacion = d.rotacion.etiqueta ?? (d.rotacion.valor !== null ? `${d.rotacion.valor} veces` : 'no aplicable')
     frase = `Rotación de inventario: ${rotacion}. Ventas de ${d.demanda.ventasUnidades} unidades, con ${d.demanda.solicitudesUnidades} solicitudes de pedido.`
   }
-  sintesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(prefijo ? `${prefijo} ${frase}` : frase)
-  utterance.lang = 'es-419'
-  utterance.rate = 1.03
-  const voz = elegirVoz(sintesis)
-  if (voz) utterance.voice = voz
-  sintesis.speak(utterance)
+  decir(prefijo ? `${prefijo} ${frase}` : frase)
 }
 
 const MODELOS_IA = ['glm5.3-flash', 'deepseek-v4-flash'] as const
@@ -614,6 +652,97 @@ function ModeloSelector({ toast }: { toast: ToastApi }) {
         <option key={m} value={m}>{m}</option>
       ))}
     </Select>
+  )
+}
+
+interface PreguntasInformeProps {
+  resultado: Resultado
+  toast: ToastApi
+}
+
+/** Fase 2 de la conversación: preguntas libres ancladas al informe generado. */
+function PreguntasInforme({ resultado, toast }: PreguntasInformeProps) {
+  const [pregunta, setPregunta] = useState('')
+  const [respuesta, setRespuesta] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+  const [historial, setHistorial] = useState<PreguntaInformeHistorial[]>([])
+  const informe = useMemo(() => informeParaIa(resultado), [resultado])
+
+  const preguntar = useCallback(async (texto: string) => {
+    const limpio = texto.trim()
+    if (limpio.length < 3) return
+    setEnviando(true)
+    setRespuesta(null)
+    try {
+      const r = await preguntarSobreInforme(limpio, informe, historial)
+      setRespuesta(r.respuesta)
+      setHistorial((h) => [...h, { pregunta: limpio, respuesta: r.respuesta }].slice(-5))
+      decir(r.respuesta)
+    } catch (err) {
+      toast.error(mensajeError(err, 'No se pudo responder la pregunta.'))
+    } finally {
+      setEnviando(false)
+    }
+  }, [informe, historial, toast])
+
+  const voz = useReconocimientoVoz({
+    onFinal: (texto) => { void preguntar(texto) },
+    onError: (mensaje) => { if (mensaje) toast.error(mensaje) },
+  })
+
+  return (
+    <section className="mt-4 rounded-lg border border-linea bg-superficie p-4">
+      <h3 className="text-sm font-semibold text-tinta">Preguntá sobre este informe</h3>
+      <p className="mt-1 text-xs text-secundario">
+        La IA responde solo con los datos del informe en pantalla: «¿cuál fue la venta más cara?»,
+        «¿qué producto dejó más ganancia?», «¿cuántos vendió el vendedor admin?».
+      </p>
+      <form
+        className="mt-3 flex flex-wrap items-center gap-2"
+        onSubmit={(e) => { e.preventDefault(); void preguntar(pregunta) }}
+      >
+        <input
+          value={pregunta}
+          onChange={(e) => setPregunta(e.target.value)}
+          placeholder="Escribí o dictá tu pregunta…"
+          maxLength={500}
+          className="min-w-0 flex-1 rounded-md border border-linea bg-superficie px-3 py-2 text-sm text-tinta"
+        />
+        <Button type="submit" loading={enviando}>Preguntar</Button>
+        {voz.soportado && (
+          <Button
+            type="button"
+            variant={voz.estado === 'escuchando' ? 'danger' : 'secondary'}
+            className={voz.estado === 'escuchando' ? 'animate-pulse' : undefined}
+            onClick={() => (voz.estado === 'inactivo' ? voz.iniciar() : voz.detener())}
+          >
+            {voz.estado === 'escuchando' ? 'Escuchando…' : 'Dictar pregunta'}
+          </Button>
+        )}
+      </form>
+      {voz.estado === 'escuchando' && (
+        <p className="mt-2 text-xs italic text-peligro">
+          {voz.parcial ? `«${voz.parcial}»` : 'Estoy escuchando tu pregunta…'}
+        </p>
+      )}
+      {respuesta && (
+        <p className="mt-3 rounded-md bg-suave px-3 py-2 text-sm text-tinta" aria-live="polite">
+          {respuesta}
+        </p>
+      )}
+      {historial.length > 1 && (
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-secundario">
+            Preguntas anteriores ({historial.length - 1})
+          </summary>
+          <ul className="mt-2 space-y-1 text-xs text-secundario">
+            {historial.slice(0, -1).map((h, i) => (
+              <li key={`${h.pregunta}-${i}`}>«{h.pregunta}» — {h.respuesta}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
   )
 }
 
@@ -913,6 +1042,8 @@ export default function Reportes() {
           description="Elija el tipo y el rango, luego pulse Generar dashboard."
         />
       )}
+
+      {resultado && <PreguntasInforme resultado={resultado} toast={toast} />}
 
       {resultado?.tipo === 'ventas' && <DashboardVentas data={resultado.data} />}
       {resultado?.tipo === 'ganancias' && <DashboardGanancias data={resultado.data} />}
