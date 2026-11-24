@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { ChartBarIcon } from '@phosphor-icons/react'
 import {
@@ -24,12 +24,15 @@ import Input from '../components/Input'
 import Select from '../components/Select'
 import Table from '../components/Table'
 import type { Column } from '../components/Table'
+import type { ToastApi } from '../hooks/toastContext'
 import { mensajeError } from '../lib/errors'
 import { useToast } from '../hooks/useToast'
 import { useReconocimientoVoz } from '../hooks/useReconocimientoVoz'
 import {
+  cambiarModeloIA,
   descargarReporte,
   interpretarReporteVoz,
+  obtenerModeloIA,
   reporteGanancias,
   reporteInventario,
   reporteRotacion,
@@ -557,6 +560,62 @@ function pronunciarResumen(resultado: Resultado): void {
   sintesis.speak(utterance)
 }
 
+const MODELOS_IA = ['glm5.3-flash', 'deepseek-v4-flash'] as const
+
+/** Selector del modelo IA para el intérprete de voz: cambia en caliente (PUT). */
+function ModeloSelector({ toast }: { toast: ToastApi }) {
+  const [modelo, setModelo] = useState<string>('')
+  const [origen, setOrigen] = useState<'bd' | 'env'>('env')
+  const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    obtenerModeloIA()
+      .then((m) => {
+        if (!vivo) return
+        setModelo(m.modelo)
+        setOrigen(m.origen)
+      })
+      .catch(() => {}) // el selector se oculta si el backend viejo no lo tiene
+      .finally(() => {
+        if (vivo) setCargando(false)
+      })
+    return () => { vivo = false }
+  }, [])
+
+  const cambiar = async (nuevo: string) => {
+    if (!nuevo || nuevo === modelo) return
+    setGuardando(true)
+    try {
+      const resp = await cambiarModeloIA(nuevo)
+      setModelo(resp.modelo)
+      setOrigen(resp.origen)
+      toast.success(`Modelo IA ahora: ${resp.modelo}`)
+    } catch (err) {
+      toast.error(mensajeError(err, 'No se pudo cambiar el modelo.'))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  if (cargando) return null
+  return (
+    <Select
+      label="Modelo IA"
+      value={modelo}
+      disabled={guardando}
+      onChange={(e) => { void cambiar(e.target.value) }}
+      title={origen === 'bd' ? 'Configurado en la base: aplica al instante' : 'Default del servidor (env)'}
+      className="max-w-48"
+    >
+      {MODELOS_IA.map((m) => (
+        <option key={m} value={m}>{m}</option>
+      ))}
+    </Select>
+  )
+}
+
 export default function Reportes() {
   const [tipo, setTipo] = useState<TipoReporte>('ventas')
   const [desde, setDesde] = useState(hace30Dias())
@@ -728,6 +787,7 @@ export default function Reportes() {
               )}
             </Button>
           )}
+          <ModeloSelector toast={toast} />
         </div>
       </form>
 

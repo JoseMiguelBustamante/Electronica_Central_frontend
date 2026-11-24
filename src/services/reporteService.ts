@@ -89,6 +89,21 @@ export async function interpretarReporteVoz(
   return data.data as ReporteInterpretado
 }
 
+export interface ModeloIA {
+  modelo: string
+  origen: 'bd' | 'env'
+}
+
+export async function obtenerModeloIA(): Promise<ModeloIA> {
+  const { data } = await api.get('/api/reportes/modelo')
+  return data.data as ModeloIA
+}
+
+export async function cambiarModeloIA(modelo: string): Promise<ModeloIA> {
+  const { data } = await api.put('/api/reportes/modelo', { modelo })
+  return data.data as ModeloIA
+}
+
 export async function reporteVentas(params: {
   desde: string
   hasta: string
