@@ -34,6 +34,17 @@ completa y la envía tal cual.
 
 ## Tasks
 
+T9 — [DONE] S10 historial multi-turno: interpretarReporteVoz(texto, contexto?,
+historial?) envía las últimas 5 interpretaciones (historialRef) al intérprete
+para resolver referencias a turnos previos.
+T10 — [DONE] S11 multi-reporte: si la respuesta trae reportes[], se generan en
+secuencia con ejecutarReporte(..., hablar=false), se muestra el último y se
+pronuncia un único resumen combinado ("Generé N reportes. Te leo el último.");
+confirmación final con el resumen del último.
+Fix — [DONE] mensajeError distingue 'sin respuesta del servidor' de timeout
+(el bug real era CORS sin PUT en el backend, corregido en 991bb02).
+Evidencia: build 0 TS errors; eslint de los 3 archivos limpio.
+
 T3 — [DONE] interpretarReporteVoz() en reporteService.ts (interfaz ReporteInterpretado,
 POST /api/reportes/interpretar) + src/hooks/useReconocimientoVoz.ts (tipos locales,
 es-419, MENSAJES_ERROR en español, ref-based callbacks, abort en unmount,
