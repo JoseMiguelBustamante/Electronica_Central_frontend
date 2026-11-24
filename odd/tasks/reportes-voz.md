@@ -41,6 +41,14 @@ preguntas colapsable; las preguntas nunca buscan en la BD, solo razonan sobre
 el informe en pantalla.
 Evidencia: build 0 TS errors; eslint limpio.
 
+T12 — [DONE] S13 búsqueda de ventas por voz: interpretarReporteVoz devuelve
+`accion` ('reporte' | 'buscar_venta') y `criterio`; buscarVentas() consulta
+GET /api/ventas con comprobante/cliente; procesarOrdenDeVoz corta al branch de
+búsqueda (setVentasEncontradas, sin dashboard), avisa y pronuncia el resultado;
+la lista muestra cliente, fecha, estado, monto y link "Ir a Ventas"; cero
+resultados se anuncia en voz.
+Evidencia: build 0 TS errors; eslint limpio.
+
 ## Tasks
 
 T9 — [DONE] S10 historial multi-turno: interpretarReporteVoz(texto, contexto?,

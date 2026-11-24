@@ -838,7 +838,7 @@ export default function Reportes() {
         } else {
           const primera = encontradas[0]
           const detalle = `${encontradas.length === 1 ? 'Encontré 1 venta' : `Encontré ${encontradas.length} ventas`}. `
-            + `${primera.cliente}, ${formatCurrency(primera.total)}, estado ${primera.estado}.`
+            + `${primera.clienteNombre}, ${formatCurrency(primera.total)}, estado ${primera.estado}.`
           if (encontradas.length === 1) {
             toast.success('Venta encontrada.')
             decir(detalle)
@@ -1096,7 +1096,10 @@ export default function Reportes() {
               {ventasEncontradas.map((v) => (
                 <li key={v.idVenta} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
                   <span className="min-w-0">
-                    <span className="text-tinta">{v.cliente}</span>
+                    <span className="text-tinta">{v.clienteNombre}</span>
+                    {v.numeroComprobante && (
+                      <span className="ml-2 font-mono text-xs text-secundario">{v.numeroComprobante}</span>
+                    )}
                     <span className="ml-2 text-xs text-secundario">{formatDateTime(v.fechaHora)}</span>
                   </span>
                   <span className="flex items-center gap-3">

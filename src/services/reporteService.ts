@@ -240,8 +240,7 @@ export interface VentaBuscada {
   idVenta: string
   fechaHora: string
   estado: string
-  cliente: string
-  vendedor?: string
+  clienteNombre: string
   total: number
   cobrado: number
   saldo: number
