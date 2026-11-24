@@ -23,7 +23,9 @@ export default function StatCard({ title, value, description, icon: StatIcon, to
           <StatIcon size={20} />
         </span>
       </div>
-      <dd className="mt-3 font-mono text-3xl font-semibold tabular-nums text-tinta">{value}</dd>
+      <dd className="mt-3 break-words font-mono text-xl font-semibold leading-tight tabular-nums text-tinta sm:text-2xl lg:text-3xl">
+        {value}
+      </dd>
       {description && <dd className="mt-1 text-sm text-secundario">{description}</dd>}
     </>
   )

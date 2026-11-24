@@ -83,7 +83,7 @@ function Kpi({
   return (
     <div className="rounded-lg border border-linea bg-superficie p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-secundario">{label}</p>
-      <p className="mt-2 font-mono text-2xl font-semibold text-tinta">{value}</p>
+      <p className="mt-2 break-words font-mono text-xl font-semibold leading-tight tabular-nums text-tinta sm:text-2xl">{value}</p>
       {hint ? <p className="mt-1 text-xs text-secundario">{hint}</p> : null}
     </div>
   )
