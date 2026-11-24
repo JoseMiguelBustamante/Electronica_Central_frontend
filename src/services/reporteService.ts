@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import api from '../lib/api'
 
 export interface ReporteVentas {
@@ -85,8 +86,20 @@ export async function interpretarReporteVoz(
   texto: string,
   contexto?: ContextoReporte,
 ): Promise<ReporteInterpretado> {
-  const { data } = await api.post('/api/reportes/interpretar', contexto ? { texto, contexto } : { texto })
-  return data.data as ReporteInterpretado
+  const body = contexto ? { texto, contexto } : { texto }
+  // Un solo reintento transparente en cortes de red momentáneos (móvil/VPN):
+  // el dictado no debe morir por un blip de conectividad.
+  try {
+    const { data } = await api.post('/api/reportes/interpretar', body)
+    return data.data as ReporteInterpretado
+  } catch (err) {
+    if (isAxiosError(err) && !err.response) {
+      await new Promise((r) => setTimeout(r, 800))
+      const retry = await api.post('/api/reportes/interpretar', body)
+      return retry.data.data as ReporteInterpretado
+    }
+    throw err
+  }
 }
 
 export interface ModeloIA {
