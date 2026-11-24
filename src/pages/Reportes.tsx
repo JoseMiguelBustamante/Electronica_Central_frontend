@@ -787,7 +787,13 @@ export default function Reportes() {
               )}
             </Button>
           )}
+        </div>
+
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-3 border-t border-linea pt-3">
           <ModeloSelector toast={toast} />
+          <span className="text-xs text-secundario">
+            Cambia al instante, sin reiniciar: aplica al dictado por voz.
+          </span>
         </div>
       </form>
 
