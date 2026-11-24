@@ -79,17 +79,17 @@ export function esPersonal(roles: readonly string[]): boolean {
 }
 
 /**
- * Menú = 4 paquetes del perfil (PerfilGrupo14 §3.1.1) + Panel.
+ * Menú = 4 paquetes del perfil (PerfilGrupo14 §3.1.1) + Dashboard.
  * P1 Seguridad · P2 Catálogo · P3 Inventario y abastecimiento · P4 Comercial
  */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
     id: 'panel',
-    label: 'Panel',
+    label: 'Dashboard',
     paquete: 'Inicio',
     items: [
       {
-        label: 'Panel',
+        label: 'Dashboard',
         to: ROUTES.dashboard,
         icon: SquaresFourIcon,
         description: 'Resumen operativo de la tienda.',

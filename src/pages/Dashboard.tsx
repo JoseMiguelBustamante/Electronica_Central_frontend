@@ -75,7 +75,7 @@ export default function Dashboard() {
     <div className="w-full space-y-5">
       <header>
         <h2 className="text-xl font-semibold text-tinta">
-          {sesion ? `Hola, ${sesion.nombreUsuario}` : 'Panel'}
+          {sesion ? `Hola, ${sesion.nombreUsuario}` : 'Dashboard'}
         </h2>
         <p className="mt-1 text-sm text-secundario">
           Resumen operativo · {fecha}
