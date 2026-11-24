@@ -18,9 +18,9 @@ export function mensajeError(error: unknown, respaldo: string): string {
       }
       return message
     }
-    // Sin respuesta HTTP (corte de red / VPN): axios expone "Network Error".
+    // Sin respuesta HTTP (corte de red, CORS o VPN): axios expone "Network Error".
     if (!error.response && error.code !== 'ECONNABORTED') {
-      return 'Sin conexión con el servidor. Revisá tu internet o VPN e intentá de nuevo.'
+      return 'No hubo respuesta del servidor. Revisá tu conexión e intentá de nuevo.'
     }
     if (error.code === 'ECONNABORTED') {
       return 'La conexión tardó demasiado. Probá de nuevo.'

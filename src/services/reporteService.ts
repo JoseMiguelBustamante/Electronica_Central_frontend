@@ -74,19 +74,31 @@ export interface ContextoReporte {
   fechaCorte?: string
 }
 
+export interface ReportePedido {
+  tipo: TipoReporte
+  desde: string
+  hasta: string
+  fechaCorte?: string
+}
+
 export interface ReporteInterpretado {
   tipo: TipoReporte
   desde: string
   hasta: string
   fechaCorte?: string
   titulo?: string
+  /** Nivel 2: uno o más reportes pedidos en la misma frase (1..3). */
+  reportes?: ReportePedido[]
 }
 
 export async function interpretarReporteVoz(
   texto: string,
   contexto?: ContextoReporte,
+  historial?: ContextoReporte[],
 ): Promise<ReporteInterpretado> {
-  const body = contexto ? { texto, contexto } : { texto }
+  const body: Record<string, unknown> = { texto }
+  if (contexto) body.contexto = contexto
+  if (historial && historial.length) body.historial = historial
   // Un solo reintento transparente en cortes de red momentáneos (móvil/VPN):
   // el dictado no debe morir por un blip de conectividad.
   try {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { ChartBarIcon } from '@phosphor-icons/react'
 import {
@@ -37,6 +37,7 @@ import {
   reporteInventario,
   reporteRotacion,
   reporteVentas,
+  type ContextoReporte,
   type FormatoReporte,
   type ReporteGanancias,
   type ReporteInventario,
@@ -532,7 +533,7 @@ function dineroVoz(monto: number): string {
 const fechaDelResultado = (resultado: Resultado): string | undefined =>
   'periodo' in resultado.data ? resultado.data.periodo.desde : undefined
 
-function pronunciarResumen(resultado: Resultado): void {
+function pronunciarResumen(resultado: Resultado, prefijo?: string): void {
   const sintesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined
   if (!sintesis) return
   let frase: string
@@ -552,7 +553,7 @@ function pronunciarResumen(resultado: Resultado): void {
     frase = `Rotación de inventario: ${rotacion}. Ventas de ${d.demanda.ventasUnidades} unidades, con ${d.demanda.solicitudesUnidades} solicitudes de pedido.`
   }
   sintesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(frase)
+  const utterance = new SpeechSynthesisUtterance(prefijo ? `${prefijo} ${frase}` : frase)
   utterance.lang = 'es-419'
   utterance.rate = 1.03
   const voz = elegirVoz(sintesis)
@@ -632,6 +633,8 @@ export default function Reportes() {
     fechaCorte: string
   } | null>(null)
   const toast = useToast()
+  // Nivel 2: turnos previos del dictado (máx 5) que viajan al intérprete.
+  const historialRef = useRef<ContextoReporte[]>([])
 
   const generar = async (event: FormEvent) => {
     event.preventDefault()
@@ -644,7 +647,8 @@ export default function Reportes() {
     desdePedido: string,
     hastaPedido: string,
     fechaCortePedido: string,
-  ) => {
+    hablar = true,
+  ): Promise<Resultado | null> => {
     setTipo(tipoPedido)
     setDesde(desdePedido)
     setHasta(hastaPedido)
@@ -663,27 +667,62 @@ export default function Reportes() {
               : { tipo: 'rotacion', data: await reporteRotacion({ desde: desdePedido, hasta: hastaPedido }) }
       setResultado(nuevo)
       setRangoExport({ tipo: tipoPedido, desde: desdePedido, hasta: hastaPedido, fechaCorte: fechaCortePedido })
-      pronunciarResumen(nuevo)
+      if (hablar) pronunciarResumen(nuevo)
+      return nuevo
     } catch (err) {
       setError(mensajeError(err, 'No se pudo generar el reporte.'))
+      return null
     } finally {
       setOcupado(false)
     }
   }
 
-  /* Voz → interpretación IA → ejecutarReporte (S1/S3/S6/S7) */
+  /* Voz → interpretación IA → ejecutarReporte (S1/S3/S6/S7/S10/S11) */
   const procesarOrdenDeVoz = async (texto: string) => {
     try {
-      // Contexto conversacional sin estado: el dictado anterior viaja como
-      // referencia para "el mes anterior", "esa misma semana", etc.
+      // Conversación sin estado: el último reporte (contexto) y los turnos
+      // anteriores (historial) viajan con el pedido para resolver
+      // "el mes anterior", "volvé al de antes", "ese mismo tipo"…
       const contexto = rangoExport
         ? { tipo: rangoExport.tipo, desde: rangoExport.desde, hasta: rangoExport.hasta, fechaCorte: rangoExport.fechaCorte || undefined }
         : undefined
-      const interpretado = await interpretarReporteVoz(texto, contexto)
-      const tipoVoz = interpretado.tipo as TipoReporte
-      const fechaCorteVoz = interpretado.fechaCorte ?? hoyIso()
-      await ejecutarReporte(tipoVoz, interpretado.desde, interpretado.hasta, fechaCorteVoz)
-      toast.success('Reporte por voz generado.')
+      const interpretado = await interpretarReporteVoz(texto, contexto, historialRef.current)
+      const pedidos = interpretado.reportes?.length
+        ? interpretado.reportes
+        : [{ tipo: interpretado.tipo, desde: interpretado.desde, hasta: interpretado.hasta, fechaCorte: interpretado.fechaCorte }]
+      // Nivel 2: varios reportes en una frase → se generan en secuencia sin
+      // hablar en cada uno; al final se pronuncia un resumen corto.
+      const generados: string[] = []
+      let ultimo: Resultado | null = null
+      for (const pedido of pedidos) {
+        const tipoPedido = pedido.tipo as TipoReporte
+        const fechaCortePedido = pedido.fechaCorte ?? hoyIso()
+        const ok = await ejecutarReporte(tipoPedido, pedido.desde, pedido.hasta, fechaCortePedido, false)
+        if (ok) {
+          generados.push(tipoPedido)
+          ultimo = ok
+        }
+      }
+      if (generados.length === 0) {
+        toast.error('No se pudo generar el reporte pedido.')
+      } else {
+        // Confirmación hablada de lo entendido + resumen del último generado.
+        if (ultimo) {
+          const prefijo = generados.length > 1
+            ? `Generé ${generados.length} reportes. Te leo el último.`
+            : undefined
+          pronunciarResumen(ultimo, prefijo)
+        }
+        toast.success(
+          generados.length > 1
+            ? `Generé ${generados.length} reportes por voz.`
+            : 'Reporte por voz generado.',
+        )
+        historialRef.current = [
+          ...historialRef.current,
+          ...pedidos.map((p) => ({ tipo: p.tipo, desde: p.desde, hasta: p.hasta, fechaCorte: p.fechaCorte })),
+        ].slice(-5)
+      }
     } catch (err) {
       toast.error(mensajeError(err, 'No se pudo procesar el comando de voz.'))
     } finally {
